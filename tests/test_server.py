@@ -1,0 +1,295 @@
+"""Tests for the Check MCP server."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from unittest.mock import AsyncMock, MagicMock
+
+import httpx
+import pytest
+import respx
+
+from mcp_server_check.server import (
+    CheckContext,
+    _check_api_get,
+    _extract_cursor,
+    _format_list_response,
+    get_company,
+    get_employee,
+    get_payroll,
+    get_workplace,
+    list_companies,
+    list_employees,
+    list_payrolls,
+    list_workplaces,
+    mcp,
+)
+
+
+# --- Unit tests for helpers ---
+
+
+class TestExtractCursor:
+    def test_extracts_cursor_from_url(self):
+        url = "https://sandbox.checkhq.com/companies?cursor=abc123&limit=10"
+        assert _extract_cursor(url) == "abc123"
+
+    def test_returns_none_for_none(self):
+        assert _extract_cursor(None) is None
+
+    def test_returns_none_for_empty_string(self):
+        assert _extract_cursor("") is None
+
+    def test_returns_none_when_no_cursor_param(self):
+        url = "https://sandbox.checkhq.com/companies?limit=10"
+        assert _extract_cursor(url) is None
+
+
+class TestFormatListResponse:
+    def test_formats_paginated_response(self):
+        data = {
+            "next": "https://sandbox.checkhq.com/companies?cursor=next123",
+            "previous": "https://sandbox.checkhq.com/companies?cursor=prev456",
+            "results": [{"id": "com_1"}, {"id": "com_2"}],
+        }
+        result = _format_list_response(data)
+        assert result == {
+            "results": [{"id": "com_1"}, {"id": "com_2"}],
+            "next_cursor": "next123",
+            "previous_cursor": "prev456",
+        }
+
+    def test_handles_null_pagination(self):
+        data = {
+            "next": None,
+            "previous": None,
+            "results": [{"id": "com_1"}],
+        }
+        result = _format_list_response(data)
+        assert result == {
+            "results": [{"id": "com_1"}],
+            "next_cursor": None,
+            "previous_cursor": None,
+        }
+
+    def test_handles_missing_keys(self):
+        result = _format_list_response({})
+        assert result == {
+            "results": [],
+            "next_cursor": None,
+            "previous_cursor": None,
+        }
+
+
+# --- Integration tests calling tool functions directly ---
+
+
+@dataclass
+class FakeRequestContext:
+    lifespan_context: CheckContext
+
+
+class FakeCtx:
+    """Minimal stand-in for mcp Context that provides lifespan_context."""
+
+    def __init__(self, check_ctx: CheckContext):
+        self.request_context = FakeRequestContext(lifespan_context=check_ctx)
+
+
+BASE_URL = "https://sandbox.checkhq.com"
+
+
+@pytest.fixture
+def mock_api():
+    with respx.mock(base_url=BASE_URL, assert_all_called=False) as mock:
+        yield mock
+
+
+@pytest.fixture
+def ctx(mock_api):
+    """Create a fake context with an httpx client routed through respx."""
+    client = httpx.AsyncClient(
+        base_url=BASE_URL,
+        headers={"Authorization": "Bearer test-key"},
+        timeout=30.0,
+    )
+    check_ctx = CheckContext(client=client, base_url=BASE_URL)
+    return FakeCtx(check_ctx)
+
+
+@pytest.mark.anyio
+async def test_list_companies(mock_api, ctx):
+    mock_api.get("/companies").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "next": f"{BASE_URL}/companies?cursor=next_abc",
+                "previous": None,
+                "results": [
+                    {"id": "com_001", "legal_name": "Acme Corp"},
+                    {"id": "com_002", "legal_name": "Widget Inc"},
+                ],
+            },
+        )
+    )
+
+    result = await list_companies(ctx)
+    assert result["results"] == [
+        {"id": "com_001", "legal_name": "Acme Corp"},
+        {"id": "com_002", "legal_name": "Widget Inc"},
+    ]
+    assert result["next_cursor"] == "next_abc"
+    assert result["previous_cursor"] is None
+
+
+@pytest.mark.anyio
+async def test_list_companies_with_params(mock_api, ctx):
+    route = mock_api.get("/companies").mock(
+        return_value=httpx.Response(
+            200,
+            json={"next": None, "previous": None, "results": [{"id": "com_001"}]},
+        )
+    )
+
+    result = await list_companies(ctx, limit=5, active=True, cursor="abc")
+    assert result["results"] == [{"id": "com_001"}]
+    # Verify params were passed
+    request = route.calls[0].request
+    assert "limit=5" in str(request.url)
+    assert "active=true" in str(request.url)
+    assert "cursor=abc" in str(request.url)
+
+
+@pytest.mark.anyio
+async def test_get_company(mock_api, ctx):
+    mock_api.get("/companies/com_001").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": "com_001", "legal_name": "Acme Corp"},
+        )
+    )
+
+    result = await get_company(ctx, company_id="com_001")
+    assert result == {"id": "com_001", "legal_name": "Acme Corp"}
+
+
+@pytest.mark.anyio
+async def test_list_employees(mock_api, ctx):
+    mock_api.get("/employees").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "next": None,
+                "previous": None,
+                "results": [{"id": "emp_001", "first_name": "Jane"}],
+            },
+        )
+    )
+
+    result = await list_employees(ctx)
+    assert result["results"] == [{"id": "emp_001", "first_name": "Jane"}]
+
+
+@pytest.mark.anyio
+async def test_get_employee(mock_api, ctx):
+    mock_api.get("/employees/emp_001").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": "emp_001", "first_name": "Jane"},
+        )
+    )
+
+    result = await get_employee(ctx, employee_id="emp_001")
+    assert result == {"id": "emp_001", "first_name": "Jane"}
+
+
+@pytest.mark.anyio
+async def test_list_workplaces(mock_api, ctx):
+    mock_api.get("/workplaces").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "next": None,
+                "previous": None,
+                "results": [{"id": "wrk_001"}],
+            },
+        )
+    )
+
+    result = await list_workplaces(ctx)
+    assert result["results"] == [{"id": "wrk_001"}]
+
+
+@pytest.mark.anyio
+async def test_get_workplace(mock_api, ctx):
+    mock_api.get("/workplaces/wrk_001").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": "wrk_001", "name": "HQ"},
+        )
+    )
+
+    result = await get_workplace(ctx, workplace_id="wrk_001")
+    assert result == {"id": "wrk_001", "name": "HQ"}
+
+
+@pytest.mark.anyio
+async def test_list_payrolls(mock_api, ctx):
+    mock_api.get("/payrolls").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "next": None,
+                "previous": None,
+                "results": [{"id": "prl_001"}],
+            },
+        )
+    )
+
+    result = await list_payrolls(ctx)
+    assert result["results"] == [{"id": "prl_001"}]
+
+
+@pytest.mark.anyio
+async def test_get_payroll(mock_api, ctx):
+    mock_api.get("/payrolls/prl_001").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": "prl_001", "period_start": "2026-01-01"},
+        )
+    )
+
+    result = await get_payroll(ctx, payroll_id="prl_001")
+    assert result == {"id": "prl_001", "period_start": "2026-01-01"}
+
+
+@pytest.mark.anyio
+async def test_api_error_returns_error_dict(mock_api, ctx):
+    mock_api.get("/companies/com_nonexistent").mock(
+        return_value=httpx.Response(
+            404,
+            json={"error": "Not found"},
+        )
+    )
+
+    result = await get_company(ctx, company_id="com_nonexistent")
+    assert result["error"] is True
+    assert result["status_code"] == 404
+
+
+@pytest.mark.anyio
+async def test_tools_registered():
+    """Verify all expected tools are registered on the MCP server."""
+    tools = await mcp.list_tools()
+    tool_names = {t.name for t in tools}
+    expected = {
+        "list_companies",
+        "get_company",
+        "list_employees",
+        "get_employee",
+        "list_workplaces",
+        "get_workplace",
+        "list_payrolls",
+        "get_payroll",
+    }
+    assert expected == tool_names
