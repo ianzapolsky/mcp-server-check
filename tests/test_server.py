@@ -2,28 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from unittest.mock import AsyncMock, MagicMock
-
 import httpx
 import pytest
-import respx
-
-from mcp_server_check.server import (
-    CheckContext,
-    _check_api_get,
+from mcp_server_check.helpers import (
     _extract_cursor,
     _format_list_response,
-    get_company,
-    get_employee,
-    get_payroll,
-    get_workplace,
-    list_companies,
-    list_employees,
-    list_payrolls,
-    list_workplaces,
-    mcp,
 )
+from mcp_server_check.server import mcp
+from mcp_server_check.tools.companies import get_company, list_companies
+from mcp_server_check.tools.employees import get_employee, list_employees
+from mcp_server_check.tools.payrolls import get_payroll, list_payrolls
+from mcp_server_check.tools.workplaces import get_workplace, list_workplaces
+
+BASE_URL = "https://sandbox.checkhq.com"
 
 
 # --- Unit tests for helpers ---
@@ -82,39 +73,6 @@ class TestFormatListResponse:
 
 
 # --- Integration tests calling tool functions directly ---
-
-
-@dataclass
-class FakeRequestContext:
-    lifespan_context: CheckContext
-
-
-class FakeCtx:
-    """Minimal stand-in for mcp Context that provides lifespan_context."""
-
-    def __init__(self, check_ctx: CheckContext):
-        self.request_context = FakeRequestContext(lifespan_context=check_ctx)
-
-
-BASE_URL = "https://sandbox.checkhq.com"
-
-
-@pytest.fixture
-def mock_api():
-    with respx.mock(base_url=BASE_URL, assert_all_called=False) as mock:
-        yield mock
-
-
-@pytest.fixture
-def ctx(mock_api):
-    """Create a fake context with an httpx client routed through respx."""
-    client = httpx.AsyncClient(
-        base_url=BASE_URL,
-        headers={"Authorization": "Bearer test-key"},
-        timeout=30.0,
-    )
-    check_ctx = CheckContext(client=client, base_url=BASE_URL)
-    return FakeCtx(check_ctx)
 
 
 @pytest.mark.anyio
@@ -279,10 +237,11 @@ async def test_api_error_returns_error_dict(mock_api, ctx):
 
 @pytest.mark.anyio
 async def test_tools_registered():
-    """Verify all expected tools are registered on the MCP server."""
+    """Verify expected tools are registered on the MCP server."""
     tools = await mcp.list_tools()
     tool_names = {t.name for t in tools}
-    expected = {
+    # Check that core tools from the original server are present
+    expected_core = {
         "list_companies",
         "get_company",
         "list_employees",
@@ -292,4 +251,8 @@ async def test_tools_registered():
         "list_payrolls",
         "get_payroll",
     }
-    assert expected == tool_names
+    assert expected_core.issubset(tool_names), (
+        f"Missing core tools: {expected_core - tool_names}"
+    )
+    # Verify we have a large number of tools registered
+    assert len(tools) > 150, f"Expected 150+ tools, got {len(tools)}"
