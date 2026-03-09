@@ -42,7 +42,7 @@ async def _check_api_request(
     method: str,
     path: str,
     params: dict | None = None,
-    data: dict | None = None,
+    data: dict | list | None = None,
 ) -> dict:
     """Make a request to the Check API with shared error handling."""
     check_ctx = ctx.request_context.lifespan_context
@@ -78,7 +78,7 @@ async def check_api_post(ctx: Ctx, path: str, data: dict | None = None) -> dict:
     return await _check_api_request(ctx, "POST", path, data=data)
 
 
-async def check_api_patch(ctx: Ctx, path: str, data: dict) -> dict:
+async def check_api_patch(ctx: Ctx, path: str, data: dict | list) -> dict:
     """Make a PATCH request to the Check API."""
     return await _check_api_request(ctx, "PATCH", path, data=data)
 

@@ -22,19 +22,30 @@ async def get_company_tax_params(ctx: Ctx, company_id: str) -> dict:
     Args:
         company_id: The Check company ID.
     """
-    return await check_api_get(ctx, f"/companies/{company_id}/tax_params")
+    return await check_api_get(ctx, f"/company_tax_params/{company_id}")
 
 
 async def update_company_tax_params(
-    ctx: Ctx, company_id: str, data: dict
+    ctx: Ctx, company_id: str, data: list[dict]
 ) -> dict:
     """Update tax parameters for a company.
 
+    The request body must be a JSON array of tax parameter updates. Each item
+    requires an ``id`` (the ``spa_*`` tax parameter ID) and optionally
+    ``value``, ``applied_for``, and ``effective_start``.
+
+    Example::
+
+        [
+            {"id": "spa_abc123", "value": "123456789"},
+            {"id": "spa_def456", "value": "2.43", "effective_start": "2026-01-01"}
+        ]
+
     Args:
         company_id: The Check company ID.
-        data: Tax parameter fields to update.
+        data: List of tax parameter update objects, each with ``id`` and ``value``.
     """
-    return await check_api_patch(ctx, f"/companies/{company_id}/tax_params", data=data)
+    return await check_api_patch(ctx, f"/company_tax_params/{company_id}", data=data)
 
 
 async def list_company_tax_param_settings(
@@ -56,7 +67,7 @@ async def list_company_tax_param_settings(
     if cursor:
         params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/tax_param_settings", params=params or None
+        ctx, f"/company_tax_params/{company_id}/settings", params=params or None
     )
 
 
@@ -70,7 +81,7 @@ async def get_company_tax_param_setting(
         setting_id: The tax parameter setting ID.
     """
     return await check_api_get(
-        ctx, f"/companies/{company_id}/tax_param_settings/{setting_id}"
+        ctx, f"/company_tax_params/{company_id}/settings/{setting_id}"
     )
 
 
@@ -93,7 +104,7 @@ async def list_company_jurisdictions(
     if cursor:
         params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/jurisdictions", params=params or None
+        ctx, f"/company_tax_params/{company_id}/jurisdictions", params=params or None
     )
 
 
@@ -123,20 +134,31 @@ async def get_employee_tax_params(ctx: Ctx, employee_id: str) -> dict:
     Args:
         employee_id: The Check employee ID.
     """
-    return await check_api_get(ctx, f"/employees/{employee_id}/tax_params")
+    return await check_api_get(ctx, f"/employee_tax_params/{employee_id}")
 
 
 async def update_employee_tax_params(
-    ctx: Ctx, employee_id: str, data: dict
+    ctx: Ctx, employee_id: str, data: list[dict]
 ) -> dict:
     """Update tax parameters for an employee.
 
+    The request body must be a JSON array of tax parameter updates. Each item
+    requires an ``id`` (the ``spa_*`` tax parameter ID) and optionally
+    ``value``, ``applied_for``, and ``effective_start``.
+
+    Example::
+
+        [
+            {"id": "spa_abc123", "value": "S"},
+            {"id": "spa_def456", "value": "2000", "effective_start": "2026-01-01"}
+        ]
+
     Args:
         employee_id: The Check employee ID.
-        data: Tax parameter fields to update.
+        data: List of tax parameter update objects, each with ``id`` and ``value``.
     """
     return await check_api_patch(
-        ctx, f"/employees/{employee_id}/tax_params", data=data
+        ctx, f"/employee_tax_params/{employee_id}", data=data
     )
 
 
@@ -159,7 +181,7 @@ async def list_employee_tax_param_settings(
     if cursor:
         params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/employees/{employee_id}/tax_param_settings", params=params or None
+        ctx, f"/employee_tax_params/{employee_id}/settings", params=params or None
     )
 
 
@@ -173,7 +195,7 @@ async def get_employee_tax_param_setting(
         setting_id: The tax parameter setting ID.
     """
     return await check_api_get(
-        ctx, f"/employees/{employee_id}/tax_param_settings/{setting_id}"
+        ctx, f"/employee_tax_params/{employee_id}/settings/{setting_id}"
     )
 
 
@@ -196,7 +218,7 @@ async def list_employee_jurisdictions(
     if cursor:
         params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/employees/{employee_id}/jurisdictions", params=params or None
+        ctx, f"/employee_tax_params/{employee_id}/jurisdictions", params=params or None
     )
 
 

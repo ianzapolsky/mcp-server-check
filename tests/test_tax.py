@@ -17,7 +17,7 @@ from mcp_server_check.tools.tax import (
 
 @pytest.mark.anyio
 async def test_get_company_tax_params(mock_api, ctx):
-    mock_api.get("/companies/com_001/tax_params").mock(
+    mock_api.get("/company_tax_params/com_001").mock(
         return_value=httpx.Response(200, json={"id": "com_001", "ein": "12-3456789"})
     )
     result = await get_company_tax_params(ctx, company_id="com_001")
@@ -26,11 +26,13 @@ async def test_get_company_tax_params(mock_api, ctx):
 
 @pytest.mark.anyio
 async def test_update_company_tax_params(mock_api, ctx):
-    mock_api.patch("/companies/com_001/tax_params").mock(
-        return_value=httpx.Response(200, json={"id": "com_001"})
+    mock_api.patch("/company_tax_params/com_001").mock(
+        return_value=httpx.Response(200, json={"results": [{"id": "spa_001"}]})
     )
-    result = await update_company_tax_params(ctx, company_id="com_001", data={"ein": "12-3456789"})
-    assert result["id"] == "com_001"
+    result = await update_company_tax_params(
+        ctx, company_id="com_001", data=[{"id": "spa_001", "value": "12-3456789"}]
+    )
+    assert result["results"] == [{"id": "spa_001"}]
 
 
 @pytest.mark.anyio
