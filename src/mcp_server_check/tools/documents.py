@@ -244,17 +244,23 @@ async def get_company_provided_document(ctx: Ctx, document_id: str) -> dict:
 
 
 async def create_company_provided_document(
-    ctx: Ctx, company: str, data: dict | None = None
+    ctx: Ctx,
+    company: str,
+    document_type: str | None = None,
 ) -> dict:
     """Create a company-provided document.
 
     Args:
         company: The Check company ID.
-        data: Document fields (title, description, etc.).
+        document_type: Type of document — one of "940", "941", "943", "944", "945",
+            "cp_575", "147_c", "signatory_photo_id", "voided_check", "bank_statement",
+            "ss4", "bank_account_owner_id", "bank_letter", "profit_and_loss",
+            "cash_flow_statement", "balance_sheet", "articles_of_incorporation",
+            "articles_of_incorporation_signatory_amendment", "state_registration".
     """
     body: dict = {"company": company}
-    if data:
-        body.update(data)
+    if document_type is not None:
+        body["document_type"] = document_type
     return await check_api_post(ctx, "/company_provided_documents", data=body)
 
 

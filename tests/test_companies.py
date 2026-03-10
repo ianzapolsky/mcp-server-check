@@ -36,7 +36,7 @@ async def test_update_company(mock_api, ctx):
             200, json={"id": "com_001", "legal_name": "Updated"}
         )
     )
-    result = await update_company(ctx, company_id="com_001", data={"legal_name": "Updated"})
+    result = await update_company(ctx, company_id="com_001", legal_name="Updated")
     assert result["legal_name"] == "Updated"
 
 

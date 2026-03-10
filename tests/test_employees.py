@@ -41,7 +41,7 @@ async def test_update_employee(mock_api, ctx):
         )
     )
     result = await update_employee(
-        ctx, employee_id="emp_001", data={"first_name": "Janet"}
+        ctx, employee_id="emp_001", first_name="Janet"
     )
     assert result["first_name"] == "Janet"
 

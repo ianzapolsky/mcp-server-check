@@ -52,7 +52,16 @@ async def create_payroll(
     period_start: str,
     period_end: str,
     payday: str,
-    data: dict | None = None,
+    type: str | None = None,
+    processing_period: str | None = None,
+    pay_frequency: str | None = None,
+    funding_payment_method: str | None = None,
+    pay_schedule: str | None = None,
+    off_cycle_options: dict | None = None,
+    items: list[dict] | None = None,
+    contractor_payments: list[dict] | None = None,
+    metadata: str | None = None,
+    bank_account: str | None = None,
 ) -> dict:
     """Create a new payroll.
 
@@ -61,7 +70,23 @@ async def create_payroll(
         period_start: Pay period start date (YYYY-MM-DD).
         period_end: Pay period end date (YYYY-MM-DD).
         payday: Payday date (YYYY-MM-DD).
-        data: Additional payroll fields (type, pay_schedule, etc.).
+        type: Payroll type — "regular", "off_cycle", or "amendment". Default: "regular".
+        processing_period: Processing period — "three_day", "two_day", or "one_day".
+        pay_frequency: Pay frequency — "weekly", "biweekly", "semimonthly", "monthly",
+            "quarterly", or "annually". Default: "biweekly".
+        funding_payment_method: Funding method — "ach" or "wire". Default: "ach".
+        pay_schedule: ID of the pay schedule this payroll relates to.
+        off_cycle_options: Off-cycle config dict with keys: force_supplemental_withholding
+            (bool), apply_benefits (bool), apply_post_tax_deductions (bool).
+        items: List of payroll item dicts. Each requires "employee" and may include
+            "payment_method", "earnings" (list), "reimbursements" (list),
+            "benefit_overrides" (list), "post_tax_deduction_overrides" (list),
+            "pto_balance_hours", "sick_balance_hours", "metadata".
+        contractor_payments: List of contractor payment dicts. Each requires "contractor"
+            and may include "payment_method", "amount", "reimbursement_amount",
+            "workplace", "paper_check_number".
+        metadata: Additional JSON metadata string.
+        bank_account: ID of the bank account to fund the payroll.
     """
     body: dict = {
         "company": company,
@@ -69,19 +94,94 @@ async def create_payroll(
         "period_end": period_end,
         "payday": payday,
     }
-    if data:
-        body.update(data)
+    if type is not None:
+        body["type"] = type
+    if processing_period is not None:
+        body["processing_period"] = processing_period
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if funding_payment_method is not None:
+        body["funding_payment_method"] = funding_payment_method
+    if pay_schedule is not None:
+        body["pay_schedule"] = pay_schedule
+    if off_cycle_options is not None:
+        body["off_cycle_options"] = off_cycle_options
+    if items is not None:
+        body["items"] = items
+    if contractor_payments is not None:
+        body["contractor_payments"] = contractor_payments
+    if metadata is not None:
+        body["metadata"] = metadata
+    if bank_account is not None:
+        body["bank_account"] = bank_account
     return await check_api_post(ctx, "/payrolls", data=body)
 
 
-async def update_payroll(ctx: Ctx, payroll_id: str, data: dict) -> dict:
+async def update_payroll(
+    ctx: Ctx,
+    payroll_id: str,
+    period_start: str | None = None,
+    period_end: str | None = None,
+    payday: str | None = None,
+    type: str | None = None,
+    processing_period: str | None = None,
+    pay_frequency: str | None = None,
+    funding_payment_method: str | None = None,
+    pay_schedule: str | None = None,
+    off_cycle_options: dict | None = None,
+    items: list[dict] | None = None,
+    contractor_payments: list[dict] | None = None,
+    metadata: str | None = None,
+    bank_account: str | None = None,
+) -> dict:
     """Update an existing payroll.
 
     Args:
         payroll_id: The Check payroll ID.
-        data: Fields to update.
+        period_start: Pay period start date (YYYY-MM-DD).
+        period_end: Pay period end date (YYYY-MM-DD).
+        payday: Payday date (YYYY-MM-DD).
+        type: Payroll type — "regular", "off_cycle", or "amendment".
+        processing_period: Processing period — "three_day", "two_day", or "one_day".
+        pay_frequency: Pay frequency — "weekly", "biweekly", "semimonthly", "monthly",
+            "quarterly", or "annually".
+        funding_payment_method: Funding method — "ach" or "wire".
+        pay_schedule: ID of the pay schedule this payroll relates to.
+        off_cycle_options: Off-cycle config dict with keys: force_supplemental_withholding
+            (bool), apply_benefits (bool), apply_post_tax_deductions (bool).
+        items: List of payroll item dicts (see create_payroll for shape).
+        contractor_payments: List of contractor payment dicts (see create_payroll for shape).
+        metadata: Additional JSON metadata string.
+        bank_account: ID of the bank account to fund the payroll.
     """
-    return await check_api_patch(ctx, f"/payrolls/{payroll_id}", data=data)
+    body: dict = {}
+    if period_start is not None:
+        body["period_start"] = period_start
+    if period_end is not None:
+        body["period_end"] = period_end
+    if payday is not None:
+        body["payday"] = payday
+    if type is not None:
+        body["type"] = type
+    if processing_period is not None:
+        body["processing_period"] = processing_period
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if funding_payment_method is not None:
+        body["funding_payment_method"] = funding_payment_method
+    if pay_schedule is not None:
+        body["pay_schedule"] = pay_schedule
+    if off_cycle_options is not None:
+        body["off_cycle_options"] = off_cycle_options
+    if items is not None:
+        body["items"] = items
+    if contractor_payments is not None:
+        body["contractor_payments"] = contractor_payments
+    if metadata is not None:
+        body["metadata"] = metadata
+    if bank_account is not None:
+        body["bank_account"] = bank_account
+    return await check_api_patch(ctx, f"/payrolls/{payroll_id}", data=body)
 
 
 async def delete_payroll(ctx: Ctx, payroll_id: str) -> dict:

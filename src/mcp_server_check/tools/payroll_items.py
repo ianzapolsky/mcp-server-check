@@ -47,33 +47,94 @@ async def get_payroll_item(ctx: Ctx, payroll_item_id: str) -> dict:
 
 
 async def create_payroll_item(
-    ctx: Ctx, payroll: str, employee: str, data: dict | None = None
+    ctx: Ctx,
+    payroll: str,
+    employee: str,
+    payment_method: str | None = None,
+    earnings: list[dict] | None = None,
+    reimbursements: list[dict] | None = None,
 ) -> dict:
     """Create a new payroll item.
 
     Args:
         payroll: The Check payroll ID.
         employee: The Check employee ID.
-        data: Additional payroll item fields (earnings, reimbursements, etc.).
+        payment_method: Payment method — "direct_deposit" or "manual".
+        earnings: List of earning dicts. Each requires "workplace" and may include
+            "type", "earning_code", "description", "earning_rate", "amount", "hours",
+            "piece_units", "metadata".
+        reimbursements: List of reimbursement dicts. Each requires "amount" and may
+            include "description", "code", "metadata".
     """
     body: dict = {"payroll": payroll, "employee": employee}
-    if data:
-        body.update(data)
+    if payment_method is not None:
+        body["payment_method"] = payment_method
+    if earnings is not None:
+        body["earnings"] = earnings
+    if reimbursements is not None:
+        body["reimbursements"] = reimbursements
     return await check_api_post(ctx, "/payroll_items", data=body)
 
 
-async def update_payroll_item(ctx: Ctx, payroll_item_id: str, data: dict) -> dict:
+async def update_payroll_item(
+    ctx: Ctx,
+    payroll_item_id: str,
+    payment_method: str | None = None,
+    earnings: list[dict] | None = None,
+    reimbursements: list[dict] | None = None,
+    benefit_overrides: list[dict] | None = None,
+    post_tax_deduction_overrides: list[dict] | None = None,
+    pto_balance_hours: float | None = None,
+    sick_balance_hours: float | None = None,
+    supplemental_tax_calc_method: str | None = None,
+    paper_check_number: str | None = None,
+    metadata: str | None = None,
+) -> dict:
     """Update an existing payroll item.
 
     Args:
         payroll_item_id: The Check payroll item ID.
-        data: Fields to update.
+        payment_method: Payment method — "direct_deposit" or "manual".
+        earnings: List of earning dicts (see create_payroll_item for shape).
+        reimbursements: List of reimbursement dicts (see create_payroll_item for shape).
+        benefit_overrides: List of benefit override dicts. Each requires "benefit" and
+            may include "employee_contribution_amount", "company_contribution_amount".
+        post_tax_deduction_overrides: List of post-tax deduction override dicts. Each
+            requires "post_tax_deduction" and "amount".
+        pto_balance_hours: Employee's remaining PTO hour balance for paystub display.
+        sick_balance_hours: Employee's remaining sick hour balance for paystub display.
+        supplemental_tax_calc_method: Tax calculation method — "flat" or "aggregate".
+        paper_check_number: Check number for printed checks.
+        metadata: Additional JSON metadata string.
     """
-    return await check_api_patch(ctx, f"/payroll_items/{payroll_item_id}", data=data)
+    body: dict = {}
+    if payment_method is not None:
+        body["payment_method"] = payment_method
+    if earnings is not None:
+        body["earnings"] = earnings
+    if reimbursements is not None:
+        body["reimbursements"] = reimbursements
+    if benefit_overrides is not None:
+        body["benefit_overrides"] = benefit_overrides
+    if post_tax_deduction_overrides is not None:
+        body["post_tax_deduction_overrides"] = post_tax_deduction_overrides
+    if pto_balance_hours is not None:
+        body["pto_balance_hours"] = pto_balance_hours
+    if sick_balance_hours is not None:
+        body["sick_balance_hours"] = sick_balance_hours
+    if supplemental_tax_calc_method is not None:
+        body["supplemental_tax_calc_method"] = supplemental_tax_calc_method
+    if paper_check_number is not None:
+        body["paper_check_number"] = paper_check_number
+    if metadata is not None:
+        body["metadata"] = metadata
+    return await check_api_patch(ctx, f"/payroll_items/{payroll_item_id}", data=body)
 
 
 async def bulk_update_payroll_items(ctx: Ctx, data: dict) -> dict:
     """Bulk update payroll items.
+
+    The payload is a complex bulk structure — pass the full request body as a dict.
 
     Args:
         data: Bulk update payload with items array.

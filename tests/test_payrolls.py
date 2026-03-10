@@ -38,7 +38,7 @@ async def test_update_payroll(mock_api, ctx):
     mock_api.patch("/payrolls/prl_001").mock(
         return_value=httpx.Response(200, json={"id": "prl_001", "type": "regular"})
     )
-    result = await update_payroll(ctx, payroll_id="prl_001", data={"type": "regular"})
+    result = await update_payroll(ctx, payroll_id="prl_001", type="regular")
     assert result["type"] == "regular"
 
 

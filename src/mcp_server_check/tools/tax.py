@@ -225,6 +225,8 @@ async def list_employee_jurisdictions(
 async def bulk_get_employee_tax_param_settings(ctx: Ctx, data: dict) -> dict:
     """Bulk get employee tax parameter settings.
 
+    The payload is a complex bulk structure — pass the full request body as a dict.
+
     Args:
         data: Bulk request payload with employee IDs or filters.
     """
@@ -235,6 +237,8 @@ async def bulk_get_employee_tax_param_settings(ctx: Ctx, data: dict) -> dict:
 
 async def bulk_update_employee_tax_param_settings(ctx: Ctx, data: dict) -> dict:
     """Bulk update employee tax parameter settings.
+
+    The payload is a complex bulk structure — pass the full request body as a dict.
 
     Args:
         data: Bulk update payload with settings to update.
@@ -275,6 +279,8 @@ async def create_company_tax_elections(
 ) -> dict:
     """Create tax elections for a company.
 
+    The payload is a complex nested structure — pass the full request body as a dict.
+
     Args:
         company_id: The Check company ID.
         data: Tax election data.
@@ -288,6 +294,8 @@ async def update_company_tax_elections(
     ctx: Ctx, company_id: str, data: dict
 ) -> dict:
     """Update tax elections for a company.
+
+    The payload is a complex nested structure — pass the full request body as a dict.
 
     Args:
         company_id: The Check company ID.
@@ -328,6 +336,8 @@ async def update_employee_tax_elections(
     ctx: Ctx, employee_id: str, data: dict
 ) -> dict:
     """Update tax elections for an employee.
+
+    The payload is a complex nested structure — pass the full request body as a dict.
 
     Args:
         employee_id: The Check employee ID.
@@ -403,6 +413,8 @@ async def get_exempt_status(ctx: Ctx, employee_id: str) -> dict:
 async def update_exempt_status(ctx: Ctx, employee_id: str, data: dict) -> dict:
     """Update exempt status for an employee.
 
+    The payload is a complex structure — pass the full request body as a dict.
+
     Args:
         employee_id: The Check employee ID.
         data: Exempt status fields to update.
@@ -435,6 +447,8 @@ async def list_exemptible_taxes(
 async def update_exemptible_tax(ctx: Ctx, tax_id: str, data: dict) -> dict:
     """Update an exemptible tax.
 
+    The payload is a complex structure — pass the full request body as a dict.
+
     Args:
         tax_id: The exemptible tax ID.
         data: Fields to update.
@@ -444,6 +458,8 @@ async def update_exemptible_tax(ctx: Ctx, tax_id: str, data: dict) -> dict:
 
 async def bulk_update_exemptible_taxes(ctx: Ctx, data: dict) -> dict:
     """Bulk update exemptible taxes.
+
+    The payload is a complex bulk structure — pass the full request body as a dict.
 
     Args:
         data: Bulk update payload.
@@ -485,13 +501,21 @@ async def get_employee_tax_statement(ctx: Ctx, statement_id: str) -> dict:
 # --- Tax Packages ---
 
 
-async def request_tax_package(ctx: Ctx, data: dict) -> dict:
+async def request_tax_package(
+    ctx: Ctx,
+    company: str,
+    contents: str | None = None,
+) -> dict:
     """Request a tax package.
 
     Args:
-        data: Tax package request details (company, year, etc.).
+        company: The Check company ID.
+        contents: JSON string of employee_tax_statements IDs to generate.
     """
-    return await check_api_post(ctx, "/tax_packages", data=data)
+    body: dict = {"company": company}
+    if contents is not None:
+        body["contents"] = contents
+    return await check_api_post(ctx, "/tax_packages", data=body)
 
 
 async def get_tax_package(ctx: Ctx, tax_package_id: str) -> dict:

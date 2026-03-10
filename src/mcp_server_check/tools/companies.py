@@ -50,27 +50,139 @@ async def get_company(ctx: Ctx, company_id: str) -> dict:
     return await check_api_get(ctx, f"/companies/{company_id}")
 
 
-async def create_company(ctx: Ctx, legal_name: str, data: dict | None = None) -> dict:
+async def create_company(
+    ctx: Ctx,
+    legal_name: str,
+    trade_name: str | None = None,
+    other_business_name: str | None = None,
+    business_type: str | None = None,
+    industry_type: str | None = None,
+    website: str | None = None,
+    email: str | None = None,
+    phone: str | None = None,
+    address: dict | None = None,
+    pay_frequency: str | None = None,
+    start_date: str | None = None,
+    metadata: str | None = None,
+) -> dict:
     """Create a new company.
 
     Args:
         legal_name: The legal name of the company.
-        data: Additional company fields (address, phone, etc.).
+        trade_name: Trade name (DBA) of the company.
+        other_business_name: Other business name used by the company.
+        business_type: One of "sole_proprietorship", "partnership", "c_corporation",
+            "s_corporation", or "llc".
+        industry_type: Industry classification (e.g. "health_care", "restaurant",
+            "financial_services", "general_construction_or_general_contracting", etc.).
+        website: Company website URL.
+        email: Email of the payroll department or administrator.
+        phone: Company phone number.
+        address: Address dict with keys: line1, line2, city, state, postal_code, country.
+        pay_frequency: Default pay frequency — "weekly", "biweekly", "semimonthly",
+            "monthly", "quarterly", or "annually".
+        start_date: Date matching first payday using Check (YYYY-MM-DD).
+        metadata: Additional JSON metadata string.
     """
-    body = {"legal_name": legal_name}
-    if data:
-        body.update(data)
+    body: dict = {"legal_name": legal_name}
+    if trade_name is not None:
+        body["trade_name"] = trade_name
+    if other_business_name is not None:
+        body["other_business_name"] = other_business_name
+    if business_type is not None:
+        body["business_type"] = business_type
+    if industry_type is not None:
+        body["industry_type"] = industry_type
+    if website is not None:
+        body["website"] = website
+    if email is not None:
+        body["email"] = email
+    if phone is not None:
+        body["phone"] = phone
+    if address is not None:
+        body["address"] = address
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if start_date is not None:
+        body["start_date"] = start_date
+    if metadata is not None:
+        body["metadata"] = metadata
     return await check_api_post(ctx, "/companies", data=body)
 
 
-async def update_company(ctx: Ctx, company_id: str, data: dict) -> dict:
+async def update_company(
+    ctx: Ctx,
+    company_id: str,
+    legal_name: str | None = None,
+    trade_name: str | None = None,
+    other_business_name: str | None = None,
+    business_type: str | None = None,
+    industry_type: str | None = None,
+    website: str | None = None,
+    email: str | None = None,
+    phone: str | None = None,
+    address: dict | None = None,
+    principal_place_of_business: str | None = None,
+    pay_frequency: str | None = None,
+    processing_period: str | None = None,
+    start_date: str | None = None,
+    metadata: str | None = None,
+    default_bank_account: str | None = None,
+) -> dict:
     """Update an existing company.
 
     Args:
         company_id: The Check company ID.
-        data: Fields to update.
+        legal_name: The legal name of the company.
+        trade_name: Trade name (DBA) of the company.
+        other_business_name: Other business name used by the company.
+        business_type: One of "sole_proprietorship", "partnership", "c_corporation",
+            "s_corporation", or "llc".
+        industry_type: Industry classification.
+        website: Company website URL.
+        email: Email of the payroll department or administrator.
+        phone: Company phone number.
+        address: Address dict with keys: line1, line2, city, state, postal_code, country.
+        principal_place_of_business: Workplace ID whose address prints on paystubs.
+        pay_frequency: Default pay frequency — "weekly", "biweekly", "semimonthly",
+            "monthly", "quarterly", or "annually".
+        processing_period: Processing period — "three_day", "two_day", or "one_day".
+        start_date: Date the company will start using Check (YYYY-MM-DD).
+        metadata: Additional JSON metadata string.
+        default_bank_account: ID of the company's default bank account.
     """
-    return await check_api_patch(ctx, f"/companies/{company_id}", data=data)
+    body: dict = {}
+    if legal_name is not None:
+        body["legal_name"] = legal_name
+    if trade_name is not None:
+        body["trade_name"] = trade_name
+    if other_business_name is not None:
+        body["other_business_name"] = other_business_name
+    if business_type is not None:
+        body["business_type"] = business_type
+    if industry_type is not None:
+        body["industry_type"] = industry_type
+    if website is not None:
+        body["website"] = website
+    if email is not None:
+        body["email"] = email
+    if phone is not None:
+        body["phone"] = phone
+    if address is not None:
+        body["address"] = address
+    if principal_place_of_business is not None:
+        body["principal_place_of_business"] = principal_place_of_business
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if processing_period is not None:
+        body["processing_period"] = processing_period
+    if start_date is not None:
+        body["start_date"] = start_date
+    if metadata is not None:
+        body["metadata"] = metadata
+    if default_bank_account is not None:
+        body["default_bank_account"] = default_bank_account
+    return await check_api_patch(ctx, f"/companies/{company_id}", data=body)
 
 
 async def onboard_company(ctx: Ctx, company_id: str) -> dict:
@@ -335,14 +447,35 @@ async def list_signatories(
     )
 
 
-async def create_signatory(ctx: Ctx, company_id: str, data: dict) -> dict:
+async def create_signatory(
+    ctx: Ctx,
+    company_id: str,
+    first_name: str,
+    last_name: str,
+    title: str,
+    email: str,
+    middle_name: str | None = None,
+) -> dict:
     """Create a signatory for a company.
 
     Args:
         company_id: The Check company ID.
-        data: Signatory fields (first_name, last_name, title, etc.).
+        first_name: Signatory's first name.
+        last_name: Signatory's last name.
+        title: Title representing the signer's relationship to the company
+            (e.g. "Officer", "Manager").
+        email: Signatory's email address.
+        middle_name: Signatory's middle name.
     """
-    return await check_api_post(ctx, f"/companies/{company_id}/signatories", data=data)
+    body: dict = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "title": title,
+        "email": email,
+    }
+    if middle_name is not None:
+        body["middle_name"] = middle_name
+    return await check_api_post(ctx, f"/companies/{company_id}/signatories", data=body)
 
 
 # --- Enrollment Profile ---
@@ -357,27 +490,232 @@ async def get_enrollment_profile(ctx: Ctx, company_id: str) -> dict:
     return await check_api_get(ctx, f"/companies/{company_id}/enrollment_profile")
 
 
-async def create_enrollment_profile(ctx: Ctx, company_id: str, data: dict) -> dict:
+async def create_enrollment_profile(
+    ctx: Ctx,
+    company_id: str,
+    employee_count: int | None = None,
+    contractor_count: int | None = None,
+    pay_period_amount: str | None = None,
+    previous_payroll_provider: str | None = None,
+    previous_payroll_provider_other: str | None = None,
+    first_payroll: bool | None = None,
+    first_payroll_of_year: bool | None = None,
+    user_since: str | None = None,
+    expected_first_payday: str | None = None,
+    approved_for_payment_processing: bool | None = None,
+    existing_payroll_customer_processing_period: str | None = None,
+    average_monthly_revenue: float | None = None,
+    earliest_known_revenue: str | None = None,
+    months_on_previous_payroll_provider: int | None = None,
+    social_media: list[str] | None = None,
+    products_actively_used: list[str] | None = None,
+    account_contacts: list[str] | None = None,
+    fraud_score: float | None = None,
+    predicted_fraud: bool | None = None,
+    paying_user: bool | None = None,
+    missed_payments_count: int | None = None,
+    payroll_history_access_method: str | None = None,
+    implementation_services_submission_comment: str | None = None,
+) -> dict:
     """Create the enrollment profile for a company.
 
     Args:
         company_id: The Check company ID.
-        data: Enrollment profile fields.
+        employee_count: Number of W2 employees.
+        contractor_count: Number of 1099 contractors.
+        pay_period_amount: Estimated total pay per period (e.g. "50000.00").
+        previous_payroll_provider: Previous provider (e.g. "gusto", "adp_run", "manual").
+        previous_payroll_provider_other: Custom label if provider not in enum.
+        first_payroll: Whether the company has ever paid people before.
+        first_payroll_of_year: Whether this is the first payroll of the calendar year.
+        user_since: Date company joined your platform (YYYY-MM-DD).
+        expected_first_payday: Expected first payday on Check (YYYY-MM-DD).
+        approved_for_payment_processing: Whether approved for payment processing.
+        existing_payroll_customer_processing_period: Current processing period —
+            "four_day", "two_day", or "one_day".
+        average_monthly_revenue: Average monthly revenue.
+        earliest_known_revenue: Earliest revenue date (YYYY-MM-DD).
+        months_on_previous_payroll_provider: Months using previous provider.
+        social_media: List of social media URLs.
+        products_actively_used: Products used — "timetracking", "payments", "scheduling".
+        account_contacts: Partner employee emails associated with the company.
+        fraud_score: Fraud risk value between 0 and 100.
+        predicted_fraud: Whether company is predicted fraudulent.
+        paying_user: Whether company pays your platform for services.
+        missed_payments_count: Number of failed payments to your platform.
+        payroll_history_access_method: One of "authorized_access_to_previous_provider",
+            "provided_credentials", or "provided_reports".
+        implementation_services_submission_comment: Optional comment for submission.
     """
+    body: dict = {}
+    if employee_count is not None:
+        body["employee_count"] = employee_count
+    if contractor_count is not None:
+        body["contractor_count"] = contractor_count
+    if pay_period_amount is not None:
+        body["pay_period_amount"] = pay_period_amount
+    if previous_payroll_provider is not None:
+        body["previous_payroll_provider"] = previous_payroll_provider
+    if previous_payroll_provider_other is not None:
+        body["previous_payroll_provider_other"] = previous_payroll_provider_other
+    if first_payroll is not None:
+        body["first_payroll"] = first_payroll
+    if first_payroll_of_year is not None:
+        body["first_payroll_of_year"] = first_payroll_of_year
+    if user_since is not None:
+        body["user_since"] = user_since
+    if expected_first_payday is not None:
+        body["expected_first_payday"] = expected_first_payday
+    if approved_for_payment_processing is not None:
+        body["approved_for_payment_processing"] = approved_for_payment_processing
+    if existing_payroll_customer_processing_period is not None:
+        body["existing_payroll_customer_processing_period"] = (
+            existing_payroll_customer_processing_period
+        )
+    if average_monthly_revenue is not None:
+        body["average_monthly_revenue"] = average_monthly_revenue
+    if earliest_known_revenue is not None:
+        body["earliest_known_revenue"] = earliest_known_revenue
+    if months_on_previous_payroll_provider is not None:
+        body["months_on_previous_payroll_provider"] = (
+            months_on_previous_payroll_provider
+        )
+    if social_media is not None:
+        body["social_media"] = social_media
+    if products_actively_used is not None:
+        body["products_actively_used"] = products_actively_used
+    if account_contacts is not None:
+        body["account_contacts"] = account_contacts
+    if fraud_score is not None:
+        body["fraud_score"] = fraud_score
+    if predicted_fraud is not None:
+        body["predicted_fraud"] = predicted_fraud
+    if paying_user is not None:
+        body["paying_user"] = paying_user
+    if missed_payments_count is not None:
+        body["missed_payments_count"] = missed_payments_count
+    if payroll_history_access_method is not None:
+        body["payroll_history_access_method"] = payroll_history_access_method
+    if implementation_services_submission_comment is not None:
+        body["implementation_services_submission_comment"] = (
+            implementation_services_submission_comment
+        )
     return await check_api_put(
-        ctx, f"/companies/{company_id}/enrollment_profile", data=data
+        ctx, f"/companies/{company_id}/enrollment_profile", data=body
     )
 
 
-async def update_enrollment_profile(ctx: Ctx, company_id: str, data: dict) -> dict:
+async def update_enrollment_profile(
+    ctx: Ctx,
+    company_id: str,
+    employee_count: int | None = None,
+    contractor_count: int | None = None,
+    pay_period_amount: str | None = None,
+    previous_payroll_provider: str | None = None,
+    previous_payroll_provider_other: str | None = None,
+    first_payroll: bool | None = None,
+    first_payroll_of_year: bool | None = None,
+    user_since: str | None = None,
+    expected_first_payday: str | None = None,
+    approved_for_payment_processing: bool | None = None,
+    existing_payroll_customer_processing_period: str | None = None,
+    average_monthly_revenue: float | None = None,
+    earliest_known_revenue: str | None = None,
+    months_on_previous_payroll_provider: int | None = None,
+    social_media: list[str] | None = None,
+    products_actively_used: list[str] | None = None,
+    account_contacts: list[str] | None = None,
+    fraud_score: float | None = None,
+    predicted_fraud: bool | None = None,
+    paying_user: bool | None = None,
+    missed_payments_count: int | None = None,
+    payroll_history_access_method: str | None = None,
+    implementation_services_submission_comment: str | None = None,
+) -> dict:
     """Update the enrollment profile for a company.
 
     Args:
         company_id: The Check company ID.
-        data: Fields to update.
+        employee_count: Number of W2 employees.
+        contractor_count: Number of 1099 contractors.
+        pay_period_amount: Estimated total pay per period.
+        previous_payroll_provider: Previous provider name.
+        previous_payroll_provider_other: Custom label if provider not in enum.
+        first_payroll: Whether the company has ever paid people before.
+        first_payroll_of_year: Whether this is the first payroll of the calendar year.
+        user_since: Date company joined your platform (YYYY-MM-DD).
+        expected_first_payday: Expected first payday on Check (YYYY-MM-DD).
+        approved_for_payment_processing: Whether approved for payment processing.
+        existing_payroll_customer_processing_period: Current processing period.
+        average_monthly_revenue: Average monthly revenue.
+        earliest_known_revenue: Earliest revenue date (YYYY-MM-DD).
+        months_on_previous_payroll_provider: Months using previous provider.
+        social_media: List of social media URLs.
+        products_actively_used: Products used — "timetracking", "payments", "scheduling".
+        account_contacts: Partner employee emails.
+        fraud_score: Fraud risk value between 0 and 100.
+        predicted_fraud: Whether company is predicted fraudulent.
+        paying_user: Whether company pays your platform for services.
+        missed_payments_count: Number of failed payments.
+        payroll_history_access_method: One of "authorized_access_to_previous_provider",
+            "provided_credentials", or "provided_reports".
+        implementation_services_submission_comment: Optional comment.
     """
+    body: dict = {}
+    if employee_count is not None:
+        body["employee_count"] = employee_count
+    if contractor_count is not None:
+        body["contractor_count"] = contractor_count
+    if pay_period_amount is not None:
+        body["pay_period_amount"] = pay_period_amount
+    if previous_payroll_provider is not None:
+        body["previous_payroll_provider"] = previous_payroll_provider
+    if previous_payroll_provider_other is not None:
+        body["previous_payroll_provider_other"] = previous_payroll_provider_other
+    if first_payroll is not None:
+        body["first_payroll"] = first_payroll
+    if first_payroll_of_year is not None:
+        body["first_payroll_of_year"] = first_payroll_of_year
+    if user_since is not None:
+        body["user_since"] = user_since
+    if expected_first_payday is not None:
+        body["expected_first_payday"] = expected_first_payday
+    if approved_for_payment_processing is not None:
+        body["approved_for_payment_processing"] = approved_for_payment_processing
+    if existing_payroll_customer_processing_period is not None:
+        body["existing_payroll_customer_processing_period"] = (
+            existing_payroll_customer_processing_period
+        )
+    if average_monthly_revenue is not None:
+        body["average_monthly_revenue"] = average_monthly_revenue
+    if earliest_known_revenue is not None:
+        body["earliest_known_revenue"] = earliest_known_revenue
+    if months_on_previous_payroll_provider is not None:
+        body["months_on_previous_payroll_provider"] = (
+            months_on_previous_payroll_provider
+        )
+    if social_media is not None:
+        body["social_media"] = social_media
+    if products_actively_used is not None:
+        body["products_actively_used"] = products_actively_used
+    if account_contacts is not None:
+        body["account_contacts"] = account_contacts
+    if fraud_score is not None:
+        body["fraud_score"] = fraud_score
+    if predicted_fraud is not None:
+        body["predicted_fraud"] = predicted_fraud
+    if paying_user is not None:
+        body["paying_user"] = paying_user
+    if missed_payments_count is not None:
+        body["missed_payments_count"] = missed_payments_count
+    if payroll_history_access_method is not None:
+        body["payroll_history_access_method"] = payroll_history_access_method
+    if implementation_services_submission_comment is not None:
+        body["implementation_services_submission_comment"] = (
+            implementation_services_submission_comment
+        )
     return await check_api_patch(
-        ctx, f"/companies/{company_id}/enrollment_profile", data=data
+        ctx, f"/companies/{company_id}/enrollment_profile", data=body
     )
 
 

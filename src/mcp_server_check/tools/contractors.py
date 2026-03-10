@@ -46,28 +46,165 @@ async def get_contractor(ctx: Ctx, contractor_id: str) -> dict:
 
 
 async def create_contractor(
-    ctx: Ctx, company: str, data: dict | None = None
+    ctx: Ctx,
+    company: str,
+    type: str | None = None,
+    first_name: str | None = None,
+    middle_name: str | None = None,
+    last_name: str | None = None,
+    business_name: str | None = None,
+    dob: str | None = None,
+    start_date: str | None = None,
+    termination_date: str | None = None,
+    workplaces: list[str] | None = None,
+    primary_workplace: str | None = None,
+    email: str | None = None,
+    ssn: str | None = None,
+    ein: str | None = None,
+    default_net_pay_split: str | None = None,
+    payment_method_preference: str | None = None,
+    address: dict | None = None,
+    metadata: str | None = None,
 ) -> dict:
     """Create a new contractor.
 
     Args:
         company: The Check company ID.
-        data: Additional contractor fields (first_name, last_name, type, etc.).
+        type: Contractor type — "individual" or "business".
+        first_name: Contractor's first name (or business primary contact's first name).
+        middle_name: Contractor's middle name.
+        last_name: Contractor's last name (or business primary contact's last name).
+        business_name: Business name (for business-type contractors).
+        dob: Date of birth (YYYY-MM-DD).
+        start_date: Most recent start date of contract (YYYY-MM-DD).
+        termination_date: Most recent termination date (YYYY-MM-DD).
+        workplaces: List of workplace IDs where the contractor works.
+        primary_workplace: Workplace ID of the contractor's primary workplace.
+        email: Contractor's email address.
+        ssn: Contractor's Social Security Number.
+        ein: Contractor's Employer Identification Number (for businesses).
+        default_net_pay_split: ID of contractor's default net pay split.
+        payment_method_preference: "direct_deposit" or "manual".
+        address: Address dict with keys: line1, line2, city, state, postal_code, country.
+        metadata: Additional JSON metadata string.
     """
     body: dict = {"company": company}
-    if data:
-        body.update(data)
+    if type is not None:
+        body["type"] = type
+    if first_name is not None:
+        body["first_name"] = first_name
+    if middle_name is not None:
+        body["middle_name"] = middle_name
+    if last_name is not None:
+        body["last_name"] = last_name
+    if business_name is not None:
+        body["business_name"] = business_name
+    if dob is not None:
+        body["dob"] = dob
+    if start_date is not None:
+        body["start_date"] = start_date
+    if termination_date is not None:
+        body["termination_date"] = termination_date
+    if workplaces is not None:
+        body["workplaces"] = workplaces
+    if primary_workplace is not None:
+        body["primary_workplace"] = primary_workplace
+    if email is not None:
+        body["email"] = email
+    if ssn is not None:
+        body["ssn"] = ssn
+    if ein is not None:
+        body["ein"] = ein
+    if default_net_pay_split is not None:
+        body["default_net_pay_split"] = default_net_pay_split
+    if payment_method_preference is not None:
+        body["payment_method_preference"] = payment_method_preference
+    if address is not None:
+        body["address"] = address
+    if metadata is not None:
+        body["metadata"] = metadata
     return await check_api_post(ctx, "/contractors", data=body)
 
 
-async def update_contractor(ctx: Ctx, contractor_id: str, data: dict) -> dict:
+async def update_contractor(
+    ctx: Ctx,
+    contractor_id: str,
+    type: str | None = None,
+    first_name: str | None = None,
+    middle_name: str | None = None,
+    last_name: str | None = None,
+    business_name: str | None = None,
+    dob: str | None = None,
+    start_date: str | None = None,
+    termination_date: str | None = None,
+    workplaces: list[str] | None = None,
+    primary_workplace: str | None = None,
+    email: str | None = None,
+    ssn: str | None = None,
+    ein: str | None = None,
+    default_net_pay_split: str | None = None,
+    payment_method_preference: str | None = None,
+    address: dict | None = None,
+    metadata: str | None = None,
+) -> dict:
     """Update an existing contractor.
 
     Args:
         contractor_id: The Check contractor ID.
-        data: Fields to update.
+        type: Contractor type — "individual" or "business".
+        first_name: Contractor's first name.
+        middle_name: Contractor's middle name.
+        last_name: Contractor's last name.
+        business_name: Business name (for business-type contractors).
+        dob: Date of birth (YYYY-MM-DD).
+        start_date: Most recent start date of contract (YYYY-MM-DD).
+        termination_date: Most recent termination date (YYYY-MM-DD).
+        workplaces: List of workplace IDs where the contractor works.
+        primary_workplace: Workplace ID of the contractor's primary workplace.
+        email: Contractor's email address.
+        ssn: Contractor's Social Security Number.
+        ein: Contractor's Employer Identification Number (for businesses).
+        default_net_pay_split: ID of contractor's default net pay split.
+        payment_method_preference: "direct_deposit" or "manual".
+        address: Address dict with keys: line1, line2, city, state, postal_code, country.
+        metadata: Additional JSON metadata string.
     """
-    return await check_api_patch(ctx, f"/contractors/{contractor_id}", data=data)
+    body: dict = {}
+    if type is not None:
+        body["type"] = type
+    if first_name is not None:
+        body["first_name"] = first_name
+    if middle_name is not None:
+        body["middle_name"] = middle_name
+    if last_name is not None:
+        body["last_name"] = last_name
+    if business_name is not None:
+        body["business_name"] = business_name
+    if dob is not None:
+        body["dob"] = dob
+    if start_date is not None:
+        body["start_date"] = start_date
+    if termination_date is not None:
+        body["termination_date"] = termination_date
+    if workplaces is not None:
+        body["workplaces"] = workplaces
+    if primary_workplace is not None:
+        body["primary_workplace"] = primary_workplace
+    if email is not None:
+        body["email"] = email
+    if ssn is not None:
+        body["ssn"] = ssn
+    if ein is not None:
+        body["ein"] = ein
+    if default_net_pay_split is not None:
+        body["default_net_pay_split"] = default_net_pay_split
+    if payment_method_preference is not None:
+        body["payment_method_preference"] = payment_method_preference
+    if address is not None:
+        body["address"] = address
+    if metadata is not None:
+        body["metadata"] = metadata
+    return await check_api_patch(ctx, f"/contractors/{contractor_id}", data=body)
 
 
 async def onboard_contractor(ctx: Ctx, contractor_id: str) -> dict:
@@ -140,17 +277,24 @@ async def list_contractor_forms(
 
 
 async def submit_contractor_form(
-    ctx: Ctx, contractor_id: str, form_id: str, data: dict | None = None
+    ctx: Ctx,
+    contractor_id: str,
+    form_id: str,
+    parameters: list[dict] | None = None,
 ) -> dict:
     """Submit a contractor form.
 
     Args:
         contractor_id: The Check contractor ID.
         form_id: The form ID.
-        data: Form submission data.
+        parameters: List of name/value dicts representing form fields.
+            Example: [{"name": "field_name", "value": "field_value"}].
     """
+    body: dict | None = None
+    if parameters is not None:
+        body = {"parameters": parameters}
     return await check_api_post(
-        ctx, f"/contractors/{contractor_id}/forms/{form_id}/submit", data=data
+        ctx, f"/contractors/{contractor_id}/forms/{form_id}/submit", data=body
     )
 
 

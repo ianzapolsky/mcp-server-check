@@ -42,29 +42,64 @@ async def get_workplace(ctx: Ctx, workplace_id: str) -> dict:
 
 
 async def create_workplace(
-    ctx: Ctx, company: str, address: dict, data: dict | None = None
+    ctx: Ctx,
+    company: str,
+    address: dict,
+    name: str | None = None,
+    active: bool | None = None,
+    metadata: str | None = None,
 ) -> dict:
     """Create a new workplace.
 
     Args:
         company: The Check company ID.
-        address: Workplace address object with line1, city, state, zip, country.
-        data: Additional workplace fields (name, etc.).
+        address: Workplace address dict with keys: line1 (required), line2, city
+            (required), state (required), postal_code (required), country.
+        name: Human-readable name for the workplace.
+        active: Whether the workplace can be associated with employees. Default: true.
+        metadata: Additional JSON metadata string.
     """
     body: dict = {"company": company, "address": address}
-    if data:
-        body.update(data)
+    if name is not None:
+        body["name"] = name
+    if active is not None:
+        body["active"] = active
+    if metadata is not None:
+        body["metadata"] = metadata
     return await check_api_post(ctx, "/workplaces", data=body)
 
 
-async def update_workplace(ctx: Ctx, workplace_id: str, data: dict) -> dict:
+async def update_workplace(
+    ctx: Ctx,
+    workplace_id: str,
+    company: str | None = None,
+    name: str | None = None,
+    address: dict | None = None,
+    active: bool | None = None,
+    metadata: str | None = None,
+) -> dict:
     """Update an existing workplace.
 
     Args:
         workplace_id: The Check workplace ID.
-        data: Fields to update.
+        company: The Check company ID.
+        name: Human-readable name for the workplace.
+        address: Address dict with keys: line1, line2, city, state, postal_code, country.
+        active: Whether the workplace can be associated with employees.
+        metadata: Additional JSON metadata string.
     """
-    return await check_api_patch(ctx, f"/workplaces/{workplace_id}", data=data)
+    body: dict = {}
+    if company is not None:
+        body["company"] = company
+    if name is not None:
+        body["name"] = name
+    if address is not None:
+        body["address"] = address
+    if active is not None:
+        body["active"] = active
+    if metadata is not None:
+        body["metadata"] = metadata
+    return await check_api_patch(ctx, f"/workplaces/{workplace_id}", data=body)
 
 
 def register(mcp: FastMCP) -> None:

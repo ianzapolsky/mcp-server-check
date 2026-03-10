@@ -31,7 +31,12 @@ async def test_create_bank_account(mock_api, ctx):
         return_value=httpx.Response(201, json={"id": "bnk_new"})
     )
     result = await create_bank_account(
-        ctx, raw_routing_number="021000021", raw_account_number="123456789"
+        ctx,
+        raw_bank_account={
+            "routing_number": "021000021",
+            "account_number": "123456789",
+            "subtype": "checking",
+        },
     )
     assert result["id"] == "bnk_new"
 

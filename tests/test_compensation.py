@@ -33,7 +33,13 @@ async def test_create_pay_schedule(mock_api, ctx):
     mock_api.post("/pay_schedules").mock(
         return_value=httpx.Response(201, json={"id": "psc_new"})
     )
-    result = await create_pay_schedule(ctx, company="com_001", frequency="biweekly")
+    result = await create_pay_schedule(
+        ctx,
+        company="com_001",
+        pay_frequency="biweekly",
+        first_payday="2026-01-15",
+        first_period_end="2026-01-14",
+    )
     assert result["id"] == "psc_new"
 
 

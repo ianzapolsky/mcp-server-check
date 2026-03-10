@@ -47,14 +47,20 @@ async def render_form(ctx: Ctx, form_id: str) -> dict:
     return await check_api_get(ctx, f"/forms/{form_id}/render")
 
 
-async def validate_form(ctx: Ctx, form_id: str, data: dict) -> dict:
+async def validate_form(
+    ctx: Ctx,
+    form_id: str,
+    parameters: list[dict],
+) -> dict:
     """Validate form data before submission.
 
     Args:
         form_id: The Check form ID.
-        data: Form data to validate.
+        parameters: List of name/value dicts representing form fields.
+            Example: [{"name": "field_name", "value": "field_value"}].
     """
-    return await check_api_post(ctx, f"/forms/{form_id}/validate", data=data)
+    body: dict = {"parameters": parameters}
+    return await check_api_post(ctx, f"/forms/{form_id}/validate", data=body)
 
 
 def register(mcp: FastMCP) -> None:

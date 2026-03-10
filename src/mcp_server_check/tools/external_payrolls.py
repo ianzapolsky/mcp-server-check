@@ -52,7 +52,9 @@ async def create_external_payroll(
     period_start: str,
     period_end: str,
     payday: str,
-    data: dict | None = None,
+    pay_frequency: str | None = None,
+    items: list[dict] | None = None,
+    contractor_payments: list[dict] | None = None,
 ) -> dict:
     """Create a new external payroll.
 
@@ -61,7 +63,12 @@ async def create_external_payroll(
         period_start: Pay period start date (YYYY-MM-DD).
         period_end: Pay period end date (YYYY-MM-DD).
         payday: Payday date (YYYY-MM-DD).
-        data: Additional external payroll fields.
+        pay_frequency: Frequency at which the external payroll was paid.
+        items: List of external payroll item dicts. Each may include "employee",
+            "earnings" (list), "reimbursements" (list), "taxes" (list),
+            "benefits" (list), "post_tax_deductions" (list).
+        contractor_payments: List of contractor payment dicts. Each may include
+            "contractor", "amount", "reimbursement_amount".
     """
     body: dict = {
         "company": company,
@@ -69,19 +76,50 @@ async def create_external_payroll(
         "period_end": period_end,
         "payday": payday,
     }
-    if data:
-        body.update(data)
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if items is not None:
+        body["items"] = items
+    if contractor_payments is not None:
+        body["contractor_payments"] = contractor_payments
     return await check_api_post(ctx, "/external_payrolls", data=body)
 
 
-async def update_external_payroll(ctx: Ctx, payroll_id: str, data: dict) -> dict:
+async def update_external_payroll(
+    ctx: Ctx,
+    payroll_id: str,
+    period_start: str | None = None,
+    period_end: str | None = None,
+    payday: str | None = None,
+    pay_frequency: str | None = None,
+    items: list[dict] | None = None,
+    contractor_payments: list[dict] | None = None,
+) -> dict:
     """Update an existing external payroll.
 
     Args:
         payroll_id: The Check external payroll ID.
-        data: Fields to update.
+        period_start: Pay period start date (YYYY-MM-DD).
+        period_end: Pay period end date (YYYY-MM-DD).
+        payday: Payday date (YYYY-MM-DD).
+        pay_frequency: Frequency at which the external payroll was paid.
+        items: List of external payroll item dicts (see create_external_payroll).
+        contractor_payments: List of contractor payment dicts (see create_external_payroll).
     """
-    return await check_api_patch(ctx, f"/external_payrolls/{payroll_id}", data=data)
+    body: dict = {}
+    if period_start is not None:
+        body["period_start"] = period_start
+    if period_end is not None:
+        body["period_end"] = period_end
+    if payday is not None:
+        body["payday"] = payday
+    if pay_frequency is not None:
+        body["pay_frequency"] = pay_frequency
+    if items is not None:
+        body["items"] = items
+    if contractor_payments is not None:
+        body["contractor_payments"] = contractor_payments
+    return await check_api_patch(ctx, f"/external_payrolls/{payroll_id}", data=body)
 
 
 async def delete_external_payroll(ctx: Ctx, payroll_id: str) -> dict:

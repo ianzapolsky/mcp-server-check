@@ -49,7 +49,7 @@ async def test_update_payroll_item(mock_api, ctx):
     mock_api.patch("/payroll_items/pit_001").mock(
         return_value=httpx.Response(200, json={"id": "pit_001"})
     )
-    result = await update_payroll_item(ctx, payroll_item_id="pit_001", data={"hours": 40})
+    result = await update_payroll_item(ctx, payroll_item_id="pit_001", payment_method="direct_deposit")
     assert result["id"] == "pit_001"
 
 

@@ -31,7 +31,7 @@ async def test_create_communication(mock_api, ctx):
     mock_api.post("/communications").mock(
         return_value=httpx.Response(201, json={"id": "comm_new"})
     )
-    result = await create_communication(ctx, data={"type": "email"})
+    result = await create_communication(ctx, company="com_001", type="email")
     assert result["id"] == "comm_new"
 
 
@@ -52,7 +52,7 @@ async def test_validate_address(mock_api, ctx):
     mock_api.post("/addresses/validate").mock(
         return_value=httpx.Response(200, json={"valid": True})
     )
-    result = await validate_address(ctx, data={"line1": "123 Main St"})
+    result = await validate_address(ctx, line1="123 Main St", city="Anytown", state="CA", postal_code="12345")
     assert result["valid"] is True
 
 

@@ -41,32 +41,65 @@ async def get_bank_account(ctx: Ctx, bank_account_id: str) -> dict:
 
 
 async def create_bank_account(
-    ctx: Ctx, raw_routing_number: str, raw_account_number: str, data: dict | None = None
+    ctx: Ctx,
+    raw_bank_account: dict | None = None,
+    plaid_bank_account: dict | None = None,
+    employee: str | None = None,
+    company: str | None = None,
+    contractor: str | None = None,
+    metadata: str | None = None,
 ) -> dict:
     """Create a new bank account.
 
+    Provide either raw_bank_account or plaid_bank_account, plus exactly one of
+    employee, company, or contractor to indicate who owns the account.
+
     Args:
-        raw_routing_number: The bank routing number.
-        raw_account_number: The bank account number.
-        data: Additional bank account fields (subtype, company, employee, etc.).
+        raw_bank_account: Bank account details dict with keys: account_number (required),
+            routing_number (required), subtype (required — "checking" or "savings"),
+            institution_name (optional).
+        plaid_bank_account: Plaid token dict with key: plaid_processor_token (required).
+        employee: ID of the employee who owns this account.
+        company: ID of the company who owns this account.
+        contractor: ID of the contractor who owns this account.
+        metadata: Additional JSON metadata string.
     """
-    body: dict = {
-        "raw_routing_number": raw_routing_number,
-        "raw_account_number": raw_account_number,
-    }
-    if data:
-        body.update(data)
+    body: dict = {}
+    if raw_bank_account is not None:
+        body["raw_bank_account"] = raw_bank_account
+    if plaid_bank_account is not None:
+        body["plaid_bank_account"] = plaid_bank_account
+    if employee is not None:
+        body["employee"] = employee
+    if company is not None:
+        body["company"] = company
+    if contractor is not None:
+        body["contractor"] = contractor
+    if metadata is not None:
+        body["metadata"] = metadata
     return await check_api_post(ctx, "/bank_accounts", data=body)
 
 
-async def update_bank_account(ctx: Ctx, bank_account_id: str, data: dict) -> dict:
+async def update_bank_account(
+    ctx: Ctx,
+    bank_account_id: str,
+    raw_bank_account: dict | None = None,
+    metadata: str | None = None,
+) -> dict:
     """Update a bank account.
 
     Args:
         bank_account_id: The Check bank account ID.
-        data: Fields to update.
+        raw_bank_account: Bank account details dict with keys: account_number,
+            routing_number, subtype ("checking" or "savings"), institution_name.
+        metadata: Additional JSON metadata string.
     """
-    return await check_api_patch(ctx, f"/bank_accounts/{bank_account_id}", data=data)
+    body: dict = {}
+    if raw_bank_account is not None:
+        body["raw_bank_account"] = raw_bank_account
+    if metadata is not None:
+        body["metadata"] = metadata
+    return await check_api_patch(ctx, f"/bank_accounts/{bank_account_id}", data=body)
 
 
 async def delete_bank_account(ctx: Ctx, bank_account_id: str) -> dict:

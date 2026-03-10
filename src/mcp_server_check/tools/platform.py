@@ -71,13 +71,27 @@ async def get_communication(ctx: Ctx, communication_id: str) -> dict:
     return await check_api_get(ctx, f"/communications/{communication_id}")
 
 
-async def create_communication(ctx: Ctx, data: dict) -> dict:
+async def create_communication(
+    ctx: Ctx,
+    company: str,
+    type: str | None = None,
+    email: dict | None = None,
+) -> dict:
     """Create a new communication.
 
     Args:
-        data: Communication details (type, recipient, message, etc.).
+        company: The Check company ID the communication is in reference to.
+        type: Communication type. Default: "email".
+        email: Email details dict with keys: to (list of emails, required),
+            from (sender email, required), cc (list of emails), subject (required),
+            message (required).
     """
-    return await check_api_post(ctx, "/communications", data=data)
+    body: dict = {"company": company}
+    if type is not None:
+        body["type"] = type
+    if email is not None:
+        body["email"] = email
+    return await check_api_post(ctx, "/communications", data=body)
 
 
 # --- Usage ---
@@ -253,6 +267,8 @@ async def update_accounting_mappings(
 ) -> dict:
     """Update accounting mappings for a company.
 
+    The payload is a complex structure — pass the full request body as a dict.
+
     Args:
         company_id: The Check company ID.
         data: Mapping fields to update.
@@ -266,6 +282,8 @@ async def toggle_accounting_mappings(
     ctx: Ctx, company_id: str, data: dict
 ) -> dict:
     """Toggle accounting mappings for a company.
+
+    The payload is a complex structure — pass the full request body as a dict.
 
     Args:
         company_id: The Check company ID.
@@ -328,35 +346,79 @@ async def list_company_groups(
     return await check_api_list(ctx, "/company_groups", params=params or None)
 
 
-async def create_company_group(ctx: Ctx, data: dict) -> dict:
+async def create_company_group(
+    ctx: Ctx,
+    name: str | None = None,
+    companies: list[dict] | None = None,
+) -> dict:
     """Create a new company group.
 
     Args:
-        data: Company group details (name, companies, etc.).
+        name: Name of the company group.
+        companies: List of company dicts, each with an "id" key (the company ID).
     """
-    return await check_api_post(ctx, "/company_groups", data=data)
+    body: dict = {}
+    if name is not None:
+        body["name"] = name
+    if companies is not None:
+        body["companies"] = companies
+    return await check_api_post(ctx, "/company_groups", data=body)
 
 
-async def update_company_group(ctx: Ctx, group_id: str, data: dict) -> dict:
+async def update_company_group(
+    ctx: Ctx,
+    group_id: str,
+    name: str | None = None,
+    companies: list[dict] | None = None,
+) -> dict:
     """Update a company group.
 
     Args:
         group_id: The company group ID.
-        data: Fields to update.
+        name: Name of the company group.
+        companies: List of company dicts, each with an "id" key (the company ID).
     """
-    return await check_api_patch(ctx, f"/company_groups/{group_id}", data=data)
+    body: dict = {}
+    if name is not None:
+        body["name"] = name
+    if companies is not None:
+        body["companies"] = companies
+    return await check_api_patch(ctx, f"/company_groups/{group_id}", data=body)
 
 
 # --- Addresses ---
 
 
-async def validate_address(ctx: Ctx, data: dict) -> dict:
+async def validate_address(
+    ctx: Ctx,
+    line1: str,
+    city: str,
+    state: str,
+    postal_code: str,
+    line2: str | None = None,
+    country: str | None = None,
+) -> dict:
     """Validate an address.
 
     Args:
-        data: Address to validate (line1, city, state, zip, country).
+        line1: Street address or PO Box.
+        city: City, district, suburb, town, or village.
+        state: 2-digit state code.
+        postal_code: 5-digit postal code or zip code.
+        line2: Apartment, suite, unit, or building.
+        country: Country code. Default: "US".
     """
-    return await check_api_post(ctx, "/addresses/validate", data=data)
+    body: dict = {
+        "line1": line1,
+        "city": city,
+        "state": state,
+        "postal_code": postal_code,
+    }
+    if line2 is not None:
+        body["line2"] = line2
+    if country is not None:
+        body["country"] = country
+    return await check_api_post(ctx, "/addresses/validate", data=body)
 
 
 # --- Setups ---
