@@ -99,7 +99,7 @@ _TOOLSET_DESCRIPTIONS: dict[str, str] = {
     "platform": "Platform-level tools: notifications, communications, usage, integrations, accounting, setups, and requirements.",
     "tax": "Manage company and employee tax parameters, elections, filings, exemptions, and tax statements.",
     "webhooks": "Create, update, delete, and test webhook configurations.",
-    "workflows": "Composite tools that combine multiple API calls: company overview, employee snapshot, payment diagnostics.",
+    "workflows": "Composite tools that combine multiple API calls: company overview, employee snapshot, contractor snapshot, payroll details, payment diagnostics, tax overview, onboarding status.",
     "workplaces": "Create, update, and view company workplace locations.",
 }
 

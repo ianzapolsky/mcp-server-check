@@ -64,12 +64,40 @@ _WRITE_KEYWORDS = (
     "request_tax_",
 )
 
+# Tools that trigger irreversible real-world effects (money movement, deletion).
+# These require explicit confirmation when CHECK_CONFIRM_DESTRUCTIVE is enabled.
+_DESTRUCTIVE_PREFIXES = (
+    "approve_",
+    "delete_",
+    "bulk_delete_",
+    "simulate_",
+    "refund_",
+    "cancel_",
+)
+_DESTRUCTIVE_EXACT = frozenset(
+    {
+        "start_implementation",
+        "cancel_implementation",
+    }
+)
+
 
 def is_write_tool(name: str) -> bool:
     """Return True if the tool name matches a write/mutating pattern."""
     return any(name.startswith(p) for p in _WRITE_PREFIXES) or any(
         name.startswith(k) for k in _WRITE_KEYWORDS
     )
+
+
+def is_destructive_tool(name: str) -> bool:
+    """Return True if the tool triggers irreversible effects (money movement, deletion).
+
+    These tools should require explicit confirmation when the confirmation
+    tier is enabled.
+    """
+    if name in _DESTRUCTIVE_EXACT:
+        return True
+    return any(name.startswith(p) for p in _DESTRUCTIVE_PREFIXES)
 
 
 def _parse_comma_set(value: str | None) -> frozenset[str] | None:
@@ -100,6 +128,7 @@ class ToolFilter:
     tools: frozenset[str] | None = None
     exclude_tools: frozenset[str] = frozenset()
     read_only: bool = False
+    confirm_destructive: bool = False
 
     def __post_init__(self) -> None:
         if self.toolsets is not None:
@@ -130,6 +159,10 @@ class ToolFilter:
 
         return True
 
+    def requires_confirmation(self, tool_name: str) -> bool:
+        """Return True if this tool requires explicit confirmation before execution."""
+        return self.confirm_destructive and is_destructive_tool(tool_name)
+
     @classmethod
     def from_env(cls) -> ToolFilter:
         """Build a ToolFilter from environment variables."""
@@ -139,6 +172,9 @@ class ToolFilter:
             exclude_tools=_parse_comma_set(os.environ.get("CHECK_EXCLUDE_TOOLS"))
             or frozenset(),
             read_only=_parse_bool(os.environ.get("CHECK_READ_ONLY")),
+            confirm_destructive=_parse_bool(
+                os.environ.get("CHECK_CONFIRM_DESTRUCTIVE")
+            ),
         )
 
     @classmethod
@@ -156,4 +192,5 @@ class ToolFilter:
             tools=_parse_comma_set(get("x-mcp-tools")),
             exclude_tools=_parse_comma_set(get("x-mcp-exclude-tools")) or frozenset(),
             read_only=_parse_bool(get("x-mcp-readonly")),
+            confirm_destructive=_parse_bool(get("x-mcp-confirm-destructive")),
         )

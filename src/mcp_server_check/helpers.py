@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Sequence
 from urllib.parse import parse_qs, urlparse
 
 import httpx
@@ -18,6 +19,55 @@ class CheckContext:
 
 Ctx = Context[ServerSession, CheckContext]
 
+# Default max results for list endpoints to avoid blowing context windows.
+DEFAULT_LIST_LIMIT = 10
+
+# Fields to keep in summary mode per entity type (by ID prefix or path hint).
+# When a list response contains many records, only these fields are returned
+# unless the caller explicitly requests full details.
+_SUMMARY_FIELDS: dict[str, Sequence[str]] = {
+    "com_": ("id", "legal_name", "trade_name", "status", "pay_frequency"),
+    "emp_": ("id", "first_name", "last_name", "email", "status", "start_date"),
+    "ctr_": ("id", "first_name", "last_name", "business_name", "type", "status"),
+    "prl_": ("id", "status", "payday", "period_start", "period_end", "type", "approval_status"),
+    "pit_": ("id", "employee", "payment_method", "status"),
+    "pmt_": ("id", "status", "amount", "payment_method", "direction"),
+    "bnk_": ("id", "institution_name", "subtype", "status", "last_four"),
+    "wrk_": ("id", "name", "active", "address"),
+    "ben_": ("id", "benefit", "description", "employee", "effective_start", "effective_end"),
+    "nps_": ("id", "employee", "contractor", "is_default"),
+    "psc_": ("id", "name", "pay_frequency", "company"),
+}
+
+
+def _detect_entity_prefix(results: list[dict]) -> str | None:
+    """Detect the entity type prefix from the first result's ID."""
+    if not results:
+        return None
+    first_id = results[0].get("id", "")
+    if isinstance(first_id, str) and "_" in first_id:
+        prefix = first_id.split("_")[0] + "_"
+        return prefix
+    return None
+
+
+def _summarize_record(record: dict, fields: Sequence[str]) -> dict:
+    """Return only the specified fields from a record."""
+    return {k: v for k, v in record.items() if k in fields}
+
+
+def _summarize_results(results: list[dict]) -> list[dict]:
+    """Return summary views of list results to reduce context size.
+
+    If the entity type is recognized (by ID prefix), only key fields are kept.
+    Unrecognized entities are returned as-is.
+    """
+    prefix = _detect_entity_prefix(results)
+    if prefix and prefix in _SUMMARY_FIELDS:
+        fields = _SUMMARY_FIELDS[prefix]
+        return [_summarize_record(r, fields) for r in results]
+    return results
+
 
 def _extract_cursor(url: str | None) -> str | None:
     """Extract the cursor parameter from a Check API pagination URL."""
@@ -28,10 +78,18 @@ def _extract_cursor(url: str | None) -> str | None:
     return cursor_values[0] if cursor_values else None
 
 
-def _format_list_response(data: dict) -> dict:
-    """Normalize a paginated Check API response."""
+def _format_list_response(data: dict, *, summarize: bool = True) -> dict:
+    """Normalize a paginated Check API response.
+
+    Args:
+        data: Raw API response dict with results, next, previous.
+        summarize: If True, return only key fields per entity to save context.
+    """
+    results = data.get("results", [])
+    formatted_results = _summarize_results(results) if summarize else results
     return {
-        "results": data.get("results", []),
+        "results": formatted_results,
+        "result_count": len(results),
         "next_cursor": _extract_cursor(data.get("next")),
         "previous_cursor": _extract_cursor(data.get("previous")),
     }
@@ -93,9 +151,22 @@ async def check_api_delete(ctx: Ctx, path: str, params: dict | None = None) -> d
     return await _check_api_request(ctx, "DELETE", path, params=params)
 
 
-async def check_api_list(ctx: Ctx, path: str, params: dict | None = None) -> dict:
-    """GET a list endpoint and return a normalized paginated response."""
+async def check_api_list(
+    ctx: Ctx,
+    path: str,
+    params: dict | None = None,
+    *,
+    summarize: bool = True,
+) -> dict:
+    """GET a list endpoint and return a normalized paginated response.
+
+    Args:
+        ctx: MCP context.
+        path: API path.
+        params: Query parameters.
+        summarize: If True (default), return summary views of results.
+    """
     data = await check_api_get(ctx, path, params=params)
     if "error" in data:
         return data
-    return _format_list_response(data)
+    return _format_list_response(data, summarize=summarize)
