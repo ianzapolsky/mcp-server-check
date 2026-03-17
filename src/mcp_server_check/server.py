@@ -21,6 +21,63 @@ from mcp_server_check.tools import register_all
 
 DEFAULT_BASE_URL = "https://sandbox.checkhq.com"
 
+SERVER_INSTRUCTIONS = """\
+You are connected to the Check Payroll API — a payroll infrastructure platform \
+that lets you manage companies, employees, contractors, payrolls, tax filings, \
+and payments programmatically.
+
+## Entity Model
+- **Company** → has Workplaces, Employees, Contractors, Pay Schedules, Bank Accounts
+- **Employee** (W-2) → has Earning Rates, Benefits, Post-Tax Deductions, Tax Params, Forms
+- **Contractor** (1099) → has Contractor Payments
+- **Payroll** → has Payroll Items (one per employee) and Contractor Payments
+- **Payroll Item** → has Earnings, Reimbursements, Benefit/Deduction overrides
+- **Payment** → tracks actual money movement (ACH/wire), has Payment Attempts
+
+## Key Workflows
+
+### Creating a payroll (most common workflow):
+1. Ensure the company has at least one Workplace and one Bank Account
+2. Create the Payroll with period_start, period_end, and payday dates
+3. Add Payroll Items (one per employee being paid), each with earnings
+4. Add Contractor Payments for any 1099 contractors
+5. Call preview_payroll to see calculated taxes and net pay
+6. Call approve_payroll to submit for processing
+
+### Onboarding a new company:
+1. create_company with legal_name and address
+2. create_workplace for each work location
+3. create_employee / create_contractor for each worker
+4. Set up bank_accounts for funding
+5. Configure tax params and benefits
+6. Call onboard_company when setup is complete
+
+## Important Concepts
+- **Payroll** is the batch container; **Payroll Item** is a single employee's pay stub within it
+- **Earning Rate** defines an employee's pay rate; **Earning Code** defines the type of earning (regular, overtime, bonus, etc.)
+- **Benefits** are pre-tax deductions (401k, health insurance); **Post-Tax Deductions** are after-tax (garnishments, Roth 401k)
+- **Tax Params** control withholding (W-4 info, state elections); they use `spa_*` IDs
+- Payrolls must be **approved** before they process — approval triggers real money movement
+- All IDs use prefixes: `com_` (company), `emp_` (employee), `ctr_` (contractor), `prl_` (payroll), `pit_` (payroll item), `pmt_` (payment), `wrk_` (workplace), `bnk_` (bank account)
+
+## Composite Tools (Use These First)
+Prefer the workflow tools when they fit — they combine multiple API calls in one round-trip:
+- **get_company_overview**: Company + employees + payrolls + bank accounts
+- **get_employee_snapshot**: Employee + tax params + paystubs
+- **diagnose_payment**: Payment + attempts + originating payroll item
+- **get_payroll_details**: Payroll + all items + contractor payments
+- **get_contractor_snapshot**: Contractor + payments + forms
+- **get_company_tax_overview**: Company tax params + elections + filings
+- **get_onboarding_status**: Company + workplaces + employees + bank accounts + setup requirements
+
+## Common Gotchas
+- You need a Workplace before you can add earnings to a payroll item
+- Payroll period dates must not overlap with existing payrolls
+- Bank accounts require verification before they can fund payrolls
+- Employee SSNs are write-once; after setting, only last 4 digits are readable
+- Tax parameter updates require the `spa_*` setting ID, not the parameter name
+"""
+
 
 @asynccontextmanager
 async def lifespan(server: FastMCP) -> AsyncIterator[CheckContext]:
@@ -125,11 +182,15 @@ def _setup_dynamic_mode(server: CheckMCP) -> None:
         results = index.search("", tool_filter=tf)
         return json.dumps(results, indent=2)
 
+    # Track tools that have been confirmed for execution in this session
+    _confirmed_tools: set[str] = set()
+
     @server.tool()
     async def run_tool(
         ctx: Context,
         tool_name: str,
         arguments: str | dict | None = None,
+        confirm: bool = False,
     ) -> str:
         """Execute an API tool by name with the given arguments.
 
@@ -138,6 +199,9 @@ def _setup_dynamic_mode(server: CheckMCP) -> None:
         tool_name: The exact tool name (e.g. "list_companies", "get_employee").
         arguments: Tool arguments as a JSON string or dict (e.g. '{"company_id": "com_xxx"}'
             or {"company_id": "com_xxx"}).
+        confirm: Set to true to confirm execution of a destructive tool (approve,
+            delete, simulate, refund, cancel). Required when CHECK_CONFIRM_DESTRUCTIVE
+            is enabled and the tool is destructive.
         """
         tf = server._get_active_filter()
         parsed_args: dict = {}
@@ -154,6 +218,21 @@ def _setup_dynamic_mode(server: CheckMCP) -> None:
             else:
                 return json.dumps({"error": "Arguments must be a JSON string or object"})
 
+        # Check if this destructive tool needs confirmation
+        call_key = f"{tool_name}:{json.dumps(parsed_args, sort_keys=True)}"
+        if tf.requires_confirmation(tool_name) and not confirm:
+            if call_key not in _confirmed_tools:
+                return json.dumps({
+                    "confirmation_required": True,
+                    "tool_name": tool_name,
+                    "arguments": parsed_args,
+                    "message": (
+                        f"⚠️  '{tool_name}' is a destructive operation that may "
+                        f"trigger irreversible effects (money movement, data deletion, "
+                        f"etc.). Call run_tool again with confirm=true to proceed."
+                    ),
+                })
+
         try:
             result = await index.run(
                 name=tool_name,
@@ -163,6 +242,10 @@ def _setup_dynamic_mode(server: CheckMCP) -> None:
             )
         except ValueError as e:
             return json.dumps({"error": str(e)})
+
+        # Track confirmation so repeated identical calls don't re-prompt
+        if tf.requires_confirmation(tool_name):
+            _confirmed_tools.add(call_key)
 
         return json.dumps(result) if isinstance(result, dict) else str(result)
 
@@ -269,7 +352,9 @@ def _register_resources(server: CheckMCP) -> None:
 
 def _create_server() -> CheckMCP:
     """Create and configure the MCP server based on CHECK_TOOL_MODE."""
-    server = CheckMCP("Check Payroll API", lifespan=lifespan)
+    server = CheckMCP(
+        "Check Payroll API", instructions=SERVER_INSTRUCTIONS, lifespan=lifespan
+    )
     tool_mode = os.environ.get("CHECK_TOOL_MODE", "dynamic").lower()
     if tool_mode == "all":
         register_all(server, registry=server._registry)

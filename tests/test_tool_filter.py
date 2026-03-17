@@ -9,6 +9,7 @@ import pytest
 from mcp_server_check.tool_filter import (
     TOOLSETS,
     ToolFilter,
+    is_destructive_tool,
     is_write_tool,
 )
 
@@ -231,6 +232,73 @@ class TestInvalidToolsets:
 
 
 # --- TOOLSETS constant ---
+
+
+# --- is_destructive_tool ---
+
+
+class TestIsDestructiveTool:
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "approve_payroll",
+            "delete_payroll",
+            "delete_company",
+            "bulk_delete_payroll_items",
+            "simulate_start_processing",
+            "simulate_complete_funding",
+            "refund_payment",
+            "cancel_payment",
+            "start_implementation",
+            "cancel_implementation",
+        ],
+    )
+    def test_destructive_detected(self, name):
+        assert is_destructive_tool(name), f"{name} should be destructive"
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "list_companies",
+            "get_employee",
+            "create_company",
+            "update_employee",
+            "preview_payroll",
+            "onboard_company",
+            "submit_employee_form",
+        ],
+    )
+    def test_non_destructive(self, name):
+        assert not is_destructive_tool(name), f"{name} should NOT be destructive"
+
+
+# --- requires_confirmation ---
+
+
+class TestRequiresConfirmation:
+    def test_no_confirmation_by_default(self):
+        tf = ToolFilter()
+        assert tf.requires_confirmation("approve_payroll") is False
+
+    def test_confirmation_when_enabled(self):
+        tf = ToolFilter(confirm_destructive=True)
+        assert tf.requires_confirmation("approve_payroll") is True
+        assert tf.requires_confirmation("delete_payroll") is True
+
+    def test_no_confirmation_for_safe_tools(self):
+        tf = ToolFilter(confirm_destructive=True)
+        assert tf.requires_confirmation("list_companies") is False
+        assert tf.requires_confirmation("create_company") is False
+
+    def test_from_env_confirm_destructive(self):
+        with mock.patch.dict(os.environ, {"CHECK_CONFIRM_DESTRUCTIVE": "true"}):
+            tf = ToolFilter.from_env()
+        assert tf.confirm_destructive is True
+
+    def test_from_headers_confirm_destructive(self):
+        headers = {"x-mcp-confirm-destructive": "1"}
+        tf = ToolFilter.from_headers(headers)
+        assert tf.confirm_destructive is True
 
 
 class TestToolsets:

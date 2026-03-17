@@ -69,6 +69,7 @@ class TestFormatListResponse:
         result = _format_list_response(data)
         assert result == {
             "results": [{"id": "com_1"}, {"id": "com_2"}],
+            "result_count": 2,
             "next_cursor": "next123",
             "previous_cursor": "prev456",
         }
@@ -82,6 +83,7 @@ class TestFormatListResponse:
         result = _format_list_response(data)
         assert result == {
             "results": [{"id": "com_1"}],
+            "result_count": 1,
             "next_cursor": None,
             "previous_cursor": None,
         }
@@ -90,9 +92,41 @@ class TestFormatListResponse:
         result = _format_list_response({})
         assert result == {
             "results": [],
+            "result_count": 0,
             "next_cursor": None,
             "previous_cursor": None,
         }
+
+    def test_summarizes_known_entities(self):
+        """Summary mode strips non-key fields from recognized entity types."""
+        data = {
+            "next": None,
+            "previous": None,
+            "results": [
+                {"id": "com_1", "legal_name": "Acme", "metadata": {"key": "val"}, "created_at": "2025-01-01"},
+                {"id": "com_2", "legal_name": "Widget", "metadata": {}, "ein": "12-3456789"},
+            ],
+        }
+        result = _format_list_response(data, summarize=True)
+        # Summarized results should only contain summary fields
+        for r in result["results"]:
+            assert "metadata" not in r
+            assert "created_at" not in r
+            assert "ein" not in r
+            assert "id" in r
+            assert "legal_name" in r
+
+    def test_no_summarize_returns_full(self):
+        """When summarize=False, all fields are preserved."""
+        data = {
+            "next": None,
+            "previous": None,
+            "results": [
+                {"id": "com_1", "legal_name": "Acme", "metadata": {"key": "val"}},
+            ],
+        }
+        result = _format_list_response(data, summarize=False)
+        assert result["results"][0]["metadata"] == {"key": "val"}
 
 
 # --- Integration tests calling tool functions directly ---
