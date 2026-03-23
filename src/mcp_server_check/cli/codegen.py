@@ -8,6 +8,7 @@ import json
 import sys
 import types
 import typing
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Callable
 
 import click
@@ -261,9 +262,16 @@ def _make_callback(func: Callable) -> Callable:
         call_kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
         async def _run() -> dict:
+            try:
+                pkg_version = version("mcp-server-check")
+            except PackageNotFoundError:
+                pkg_version = "dev"
             async with httpx.AsyncClient(
                 base_url=base_url,
-                headers={"Authorization": f"Bearer {api_key}"},
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "User-Agent": f"check-cli/{pkg_version}",
+                },
                 timeout=30.0,
             ) as client:
                 check_ctx = CheckContext(client=client, base_url=base_url)
