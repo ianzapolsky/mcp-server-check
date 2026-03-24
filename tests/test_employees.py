@@ -11,7 +11,6 @@ from mcp_server_check.tools.employees import (
     list_employee_forms,
     list_employee_paystubs,
     onboard_employee,
-    reveal_employee_ssn,
     submit_employee_form,
     update_employee,
 )
@@ -93,12 +92,3 @@ async def test_submit_employee_form(mock_api, ctx):
     )
     result = await submit_employee_form(ctx, employee_id="emp_001", form_id="frm_001")
     assert result["status"] == "submitted"
-
-
-@pytest.mark.anyio
-async def test_reveal_employee_ssn(mock_api, ctx):
-    mock_api.get("/employees/emp_001/reveal").mock(
-        return_value=httpx.Response(200, json={"ssn": "123-45-6789"})
-    )
-    result = await reveal_employee_ssn(ctx, employee_id="emp_001")
-    assert result["ssn"] == "123-45-6789"
