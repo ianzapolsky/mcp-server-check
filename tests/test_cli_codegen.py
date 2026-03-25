@@ -99,12 +99,6 @@ class TestMakeCommandName:
     def test_get_bank_account(self):
         assert _make_command_name("get_bank_account", "bank_accounts") == "get"
 
-    def test_reveal_bank_account_numbers(self):
-        assert (
-            _make_command_name("reveal_bank_account_numbers", "bank_accounts")
-            == "reveal-numbers"
-        )
-
     def test_list_contractor_payments(self):
         assert (
             _make_command_name("list_contractor_payments", "contractor_payments")

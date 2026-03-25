@@ -60,7 +60,6 @@ class TestIsWriteTool:
             "download_company_tax_document",
             "validate_address",
             "list_webhook_configs",
-            "reveal_employee_ssn",
             "get_enrollment_profile",
         ],
     )
@@ -362,7 +361,7 @@ class TestMerge:
         env = ToolFilter(
             toolsets=frozenset({"companies"}),
             read_only=True,
-            exclude_tools=frozenset({"reveal_employee_ssn"}),
+            exclude_tools=frozenset({"some_sensitive_tool"}),
         )
         header = ToolFilter(
             toolsets=frozenset({"companies", "employees"}),
@@ -371,7 +370,7 @@ class TestMerge:
         merged = env.merge(header)
         assert merged.toolsets == frozenset({"companies"})
         assert merged.read_only is True
-        assert merged.exclude_tools == frozenset({"reveal_employee_ssn"})
+        assert merged.exclude_tools == frozenset({"some_sensitive_tool"})
 
 
 class TestToolsets:

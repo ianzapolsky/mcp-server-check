@@ -369,15 +369,6 @@ async def update_employee_reciprocity_elections(
 # --- Other ---
 
 
-async def reveal_employee_ssn(ctx: Ctx, employee_id: str) -> dict:
-    """Reveal the SSN for an employee.
-
-    Args:
-        employee_id: The Check employee ID.
-    """
-    return await check_api_get(ctx, f"/employees/{employee_id}/reveal")
-
-
 async def authorize_employee_partner(
     ctx: Ctx, employee_id: str, data: dict | None = None
 ) -> dict:
@@ -401,7 +392,6 @@ def register(mcp: FastMCP, *, read_only: bool = False) -> None:
     mcp.add_tool(get_employee_form)
     mcp.add_tool(get_employee_company_defined_attributes)
     mcp.add_tool(get_employee_reciprocity_elections)
-    mcp.add_tool(reveal_employee_ssn)
     if not read_only:
         mcp.add_tool(create_employee)
         mcp.add_tool(update_employee)

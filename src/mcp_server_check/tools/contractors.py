@@ -302,22 +302,12 @@ async def submit_contractor_form(
     )
 
 
-async def reveal_contractor_ssn(ctx: Ctx, contractor_id: str) -> dict:
-    """Reveal the SSN/EIN for a contractor.
-
-    Args:
-        contractor_id: The Check contractor ID.
-    """
-    return await check_api_get(ctx, f"/contractors/{contractor_id}/reveal")
-
-
 def register(mcp: FastMCP, *, read_only: bool = False) -> None:
     mcp.add_tool(list_contractors)
     mcp.add_tool(get_contractor)
     mcp.add_tool(list_contractor_payments_for_contractor)
     mcp.add_tool(get_contractor_payment_for_payroll)
     mcp.add_tool(list_contractor_forms)
-    mcp.add_tool(reveal_contractor_ssn)
     if not read_only:
         mcp.add_tool(create_contractor)
         mcp.add_tool(update_contractor)
