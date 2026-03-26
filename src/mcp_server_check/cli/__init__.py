@@ -76,7 +76,11 @@ class _FilteredGroup(click.Group):
 
 
 class _MainCLI(click.Group):
-    """Top-level CLI group that hides toolset groups based on ToolFilter."""
+    """Top-level CLI group that hides toolset groups based on ToolFilter.
+
+    Overrides ``format_commands`` to render standalone commands (like
+    ``setup``) separately from API toolset groups.
+    """
 
     def __init__(
         self,
@@ -95,7 +99,7 @@ class _MainCLI(click.Group):
         commands: list[str] = []
         for name in super().list_commands(ctx):
             toolset = self.toolset_names.get(name)
-            # Non-toolset commands (shouldn't exist, but be safe) always shown
+            # Non-toolset commands always shown
             if toolset is None:
                 commands.append(name)
                 continue
@@ -114,6 +118,37 @@ class _MainCLI(click.Group):
         if tf.toolsets is not None and toolset not in tf.toolsets:
             return None
         return cmd
+
+    def format_commands(
+        self, ctx: click.Context, formatter: click.HelpFormatter
+    ) -> None:
+        visible = self.list_commands(ctx)
+        if not visible:
+            return
+
+        standalone: list[tuple[str, str]] = []
+        toolset_cmds: list[tuple[str, str]] = []
+
+        limit = formatter.width - 6 - max(len(n) for n in visible)
+
+        for name in visible:
+            cmd = self.get_command(ctx, name)
+            if cmd is None or cmd.hidden:
+                continue
+            help_text = cmd.get_short_help_str(limit=limit)
+            row = (name, help_text)
+            if name in self.toolset_names:
+                toolset_cmds.append(row)
+            else:
+                standalone.append(row)
+
+        if standalone:
+            with formatter.section("Setup"):
+                formatter.write_dl(standalone)
+
+        if toolset_cmds:
+            with formatter.section("API Resources"):
+                formatter.write_dl(toolset_cmds)
 
 
 # ---------------------------------------------------------------------------
