@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 
 import click
 
-CLAUDE_MD_CONTENT = """\
+# Sentinel used to detect whether a file already has Check CLI instructions.
+CHECK_SENTINEL = "<!-- check-cli -->"
+
+CLAUDE_MD_TEMPLATE = """\
 # Check Payroll API
+
+{sentinel}
 
 This project integrates with the [Check Payroll API](https://docs.checkhq.com/), \
 a payroll infrastructure platform for managing companies, employees, contractors, \
@@ -87,19 +94,19 @@ money movement.
 
 ```bash
 # List companies
-check companies list
+{cmd_prefix}check companies list
 
 # Get a specific company
-check companies get --company com_abc123
+{cmd_prefix}check companies get --company com_abc123
 
 # List employees for a company
-check employees list --company com_abc123
+{cmd_prefix}check employees list --company com_abc123
 
 # Preview a payroll
-check payrolls preview --payroll prl_abc123
+{cmd_prefix}check payrolls preview --payroll prl_abc123
 
 # Approve a payroll
-check payrolls approve --payroll prl_abc123
+{cmd_prefix}check payrolls approve --payroll prl_abc123
 ```
 
 ## MCP Server Setup
@@ -120,6 +127,53 @@ export CHECK_API_KEY=sk_test_...
 
 Full API reference: https://docs.checkhq.com/
 """
+
+# Required permission pattern for Claude settings.json.
+_BASH_CHECK_PERMISSION = "Bash(check *)"
+
+# Paths (relative to project root) where Claude settings may live.
+_SETTINGS_PATHS = [
+    os.path.join(".claude", "settings.json"),
+    os.path.join(".claude", "settings.local.json"),
+]
+
+
+def _check_is_on_path() -> bool:
+    """Return True if ``check`` is available as a command on PATH."""
+    return shutil.which("check") is not None
+
+
+def _render_content() -> str:
+    """Render the CLAUDE.md template with the correct command prefix."""
+    cmd_prefix = "" if _check_is_on_path() else "uv run "
+    return CLAUDE_MD_TEMPLATE.format(sentinel=CHECK_SENTINEL, cmd_prefix=cmd_prefix)
+
+
+def _file_has_check_instructions(path: str) -> bool:
+    """Return True if *path* already contains Check CLI instructions."""
+    try:
+        with open(path) as f:
+            return CHECK_SENTINEL in f.read()
+    except OSError:
+        return False
+
+
+def _has_bash_check_permission(directory: str) -> bool:
+    """Return True if any Claude settings file allows ``Bash(check *)``."""
+    for rel in _SETTINGS_PATHS:
+        settings_path = os.path.join(directory, rel)
+        try:
+            with open(settings_path) as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        allow_list = data.get("permissions", {}).get("allow", [])
+        for entry in allow_list:
+            # Match exact "Bash(check *)" or legacy "Bash(check:*)" or broader
+            # patterns like "Bash(uv run check *)" / "Bash(uv run check:*)".
+            if entry.startswith("Bash(") and "check" in entry:
+                return True
+    return False
 
 
 @click.command("setup")
@@ -147,12 +201,25 @@ def setup_command(force: bool, filename: str, directory: str | None) -> None:
     target_dir = directory or os.getcwd()
     path = os.path.join(target_dir, filename)
 
+    # Early exit if the file already contains Check instructions.
+    if os.path.exists(path) and _file_has_check_instructions(path):
+        click.echo(f"{filename} already has Check CLI instructions — skipping.")
+        return
+
     if os.path.exists(path) and not force:
         click.confirm(
             f"{filename} already exists in {target_dir}. Overwrite?", abort=True
         )
 
     with open(path, "w") as f:
-        f.write(CLAUDE_MD_CONTENT)
+        f.write(_render_content())
 
     click.echo(f"Created {path}")
+
+    # Warn if Claude settings don't have a Bash(check *) permission.
+    if not _has_bash_check_permission(target_dir):
+        click.echo(
+            "\nNote: No Bash(check *) permission found in .claude/settings.json.\n"
+            "Add it to allow Claude Code to run check commands without prompting:\n"
+            '\n  claude settings add-permission "Bash(check *)"'
+        )
