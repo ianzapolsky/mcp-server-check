@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from mcp_server_check.types import Address
 from mcp_server_check.helpers import (
-    Address,
     Ctx,
     check_api_get,
     check_api_list,
