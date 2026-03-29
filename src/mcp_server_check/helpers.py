@@ -111,6 +111,47 @@ def _format_list_response(data: dict, *, summarize: bool = True) -> dict:
     }
 
 
+def build_body(required: dict, **optional: object) -> dict:
+    """Build a request body from required fields and optional keyword arguments.
+
+    Required fields are included unconditionally. Optional keyword arguments
+    are included only when their value is not ``None``.
+
+    Example::
+
+        build_body({"company": company}, trade_name=trade_name, email=email)
+    """
+    body: dict = dict(required)
+    for key, val in optional.items():
+        if val is not None:
+            body[key] = val
+    return body
+
+
+def build_params(**kwargs: object) -> dict | None:
+    """Build query parameters from keyword arguments, dropping ``None`` values.
+
+    Booleans are lowercased (``True`` → ``"true"``), lists are comma-joined,
+    and all other values are passed through. Returns ``None`` when no
+    parameters remain (avoids sending empty ``?``).
+
+    Example::
+
+        build_params(company=company, limit=limit, active=active, ids=ids)
+    """
+    params: dict = {}
+    for key, val in kwargs.items():
+        if val is None:
+            continue
+        if isinstance(val, bool):
+            params[key] = str(val).lower()
+        elif isinstance(val, list):
+            params[key] = ",".join(val)
+        else:
+            params[key] = val
+    return params or None
+
+
 async def _check_api_request(
     ctx: Ctx,
     method: str,

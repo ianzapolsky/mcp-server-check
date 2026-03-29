@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from mcp_server_check.types import EmailDetails
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_patch,
@@ -39,24 +42,15 @@ async def list_notifications(
         recipient_type: Filter by recipient type.
         recipient: Filter by recipient ID.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if topic is not None:
-        params["topic"] = topic
-    if start_date is not None:
-        params["start_date"] = start_date
-    if end_date is not None:
-        params["end_date"] = end_date
-    if recipient_type is not None:
-        params["recipient_type"] = recipient_type
-    if recipient is not None:
-        params["recipient"] = recipient
-    return await check_api_list(ctx, "/notifications", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/notifications",
+        params=build_params(
+            company=company, limit=limit, cursor=cursor, topic=topic,
+            start_date=start_date, end_date=end_date,
+            recipient_type=recipient_type, recipient=recipient,
+        ),
+    )
 
 
 async def get_notification(ctx: Ctx, notification_id: str) -> dict:
@@ -94,24 +88,15 @@ async def list_communications(
         recipient: Filter by recipient ID.
         recipient_type: Filter by recipient type.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if start_date is not None:
-        params["start_date"] = start_date
-    if end_date is not None:
-        params["end_date"] = end_date
-    if type is not None:
-        params["type"] = type
-    if recipient is not None:
-        params["recipient"] = recipient
-    if recipient_type is not None:
-        params["recipient_type"] = recipient_type
-    return await check_api_list(ctx, "/communications", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/communications",
+        params=build_params(
+            company=company, limit=limit, cursor=cursor,
+            start_date=start_date, end_date=end_date, type=type,
+            recipient=recipient, recipient_type=recipient_type,
+        ),
+    )
 
 
 async def get_communication(ctx: Ctx, communication_id: str) -> dict:
@@ -127,7 +112,7 @@ async def create_communication(
     ctx: Ctx,
     company: str,
     type: str | None = None,
-    email: dict | None = None,
+    email: EmailDetails | None = None,
 ) -> dict:
     """Create a new communication.
 
@@ -138,12 +123,9 @@ async def create_communication(
             from (sender email, required), cc (list of emails), subject (required),
             message (required).
     """
-    body: dict = {"company": company}
-    if type is not None:
-        body["type"] = type
-    if email is not None:
-        body["email"] = email
-    return await check_api_post(ctx, "/communications", data=body)
+    return await check_api_post(
+        ctx, "/communications", data=build_body({"company": company}, type=type, email=email)
+    )
 
 
 # --- Usage ---
@@ -168,20 +150,14 @@ async def list_usage_summaries(
         period_start: Filter to summaries with period starting on or after this date (YYYY-MM-DD).
         period_end: Filter to summaries with period ending on or before this date (YYYY-MM-DD).
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    if category is not None:
-        params["category"] = category
-    if period_start is not None:
-        params["period_start"] = period_start
-    if period_end is not None:
-        params["period_end"] = period_end
-    return await check_api_list(ctx, "/usage_summaries", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/usage_summaries",
+        params=build_params(
+            limit=limit, cursor=cursor, company=company, category=category,
+            period_start=period_start, period_end=period_end,
+        ),
+    )
 
 
 async def list_usage_records(
@@ -205,22 +181,14 @@ async def list_usage_records(
         period_start: Filter to records with period starting on or after this date (YYYY-MM-DD).
         period_end: Filter to records with period ending on or before this date (YYYY-MM-DD).
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    if category is not None:
-        params["category"] = category
-    if resource_type is not None:
-        params["resource_type"] = resource_type
-    if period_start is not None:
-        params["period_start"] = period_start
-    if period_end is not None:
-        params["period_end"] = period_end
-    return await check_api_list(ctx, "/usage_records", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/usage_records",
+        params=build_params(
+            limit=limit, cursor=cursor, company=company, category=category,
+            resource_type=resource_type, period_start=period_start, period_end=period_end,
+        ),
+    )
 
 
 # --- Integrations ---
@@ -235,12 +203,9 @@ async def list_integration_partners(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/integration_partners", params=params or None)
+    return await check_api_list(
+        ctx, "/integration_partners", params=build_params(limit=limit, cursor=cursor)
+    )
 
 
 async def get_integration_partner(ctx: Ctx, partner_id: str) -> dict:
@@ -279,14 +244,11 @@ async def list_integration_permissions(
         cursor: Pagination cursor.
         integration_partner: Filter by integration partner ID.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if integration_partner is not None:
-        params["integration_partner"] = integration_partner
-    return await check_api_list(ctx, "/integration_permissions", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/integration_permissions",
+        params=build_params(limit=limit, cursor=cursor, integration_partner=integration_partner),
+    )
 
 
 async def get_integration_permission(ctx: Ctx, permission_id: str) -> dict:
@@ -311,14 +273,9 @@ async def list_integration_accesses(
         cursor: Pagination cursor.
         company: Filter by company ID.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    return await check_api_list(ctx, "/integration_accesses", params=params or None)
+    return await check_api_list(
+        ctx, "/integration_accesses", params=build_params(limit=limit, cursor=cursor, company=company)
+    )
 
 
 # --- Accounting Integrations ---
@@ -334,13 +291,10 @@ async def list_accounting_accounts(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/accounting_accounts", params=params or None
+        ctx,
+        f"/companies/{company_id}/accounting_accounts",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -414,13 +368,10 @@ async def list_accounting_sync_attempts(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/accounting_sync_attempts", params=params or None
+        ctx,
+        f"/companies/{company_id}/accounting_sync_attempts",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -436,12 +387,9 @@ async def list_company_groups(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/company_groups", params=params or None)
+    return await check_api_list(
+        ctx, "/company_groups", params=build_params(limit=limit, cursor=cursor)
+    )
 
 
 async def create_company_group(
@@ -455,12 +403,9 @@ async def create_company_group(
         name: Name of the company group.
         companies: List of company dicts, each with an "id" key (the company ID).
     """
-    body: dict = {}
-    if name is not None:
-        body["name"] = name
-    if companies is not None:
-        body["companies"] = companies
-    return await check_api_post(ctx, "/company_groups", data=body)
+    return await check_api_post(
+        ctx, "/company_groups", data=build_body({}, name=name, companies=companies)
+    )
 
 
 async def update_company_group(
@@ -476,12 +421,9 @@ async def update_company_group(
         name: Name of the company group.
         companies: List of company dicts, each with an "id" key (the company ID).
     """
-    body: dict = {}
-    if name is not None:
-        body["name"] = name
-    if companies is not None:
-        body["companies"] = companies
-    return await check_api_patch(ctx, f"/company_groups/{group_id}", data=body)
+    return await check_api_patch(
+        ctx, f"/company_groups/{group_id}", data=build_body({}, name=name, companies=companies)
+    )
 
 
 # --- Addresses ---
@@ -506,17 +448,15 @@ async def validate_address(
         line2: Apartment, suite, unit, or building.
         country: Country code. Default: "US".
     """
-    body: dict = {
-        "line1": line1,
-        "city": city,
-        "state": state,
-        "postal_code": postal_code,
-    }
-    if line2 is not None:
-        body["line2"] = line2
-    if country is not None:
-        body["country"] = country
-    return await check_api_post(ctx, "/addresses/validate", data=body)
+    return await check_api_post(
+        ctx,
+        "/addresses/validate",
+        data=build_body(
+            {"line1": line1, "city": city, "state": state, "postal_code": postal_code},
+            line2=line2,
+            country=country,
+        ),
+    )
 
 
 # --- Setups ---
@@ -535,14 +475,9 @@ async def list_setups(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/setups", params=params or None)
+    return await check_api_list(
+        ctx, "/setups", params=build_params(company=company, limit=limit, cursor=cursor)
+    )
 
 
 async def get_setup(ctx: Ctx, setup_id: str) -> dict:
@@ -576,20 +511,14 @@ async def list_requirements(
         requirement: Filter by requirement type.
         status: Filter by requirement status.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if category is not None:
-        params["category"] = category
-    if requirement is not None:
-        params["requirement"] = requirement
-    if status is not None:
-        params["status"] = status
-    return await check_api_list(ctx, "/requirements", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/requirements",
+        params=build_params(
+            company=company, limit=limit, cursor=cursor,
+            category=category, requirement=requirement, status=status,
+        ),
+    )
 
 
 async def get_requirement(ctx: Ctx, requirement_id: str) -> dict:

@@ -7,6 +7,8 @@ from fastmcp import FastMCP
 from mcp_server_check.types import Address
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_patch,
@@ -30,16 +32,9 @@ async def list_companies(
         ids: Filter to specific company IDs.
         cursor: Pagination cursor from a previous response.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if active is not None:
-        params["active"] = str(active).lower()
-    if ids:
-        params["ids"] = ",".join(ids)
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/companies", params=params or None)
+    return await check_api_list(
+        ctx, "/companies", params=build_params(limit=limit, active=active, ids=ids, cursor=cursor)
+    )
 
 
 async def get_company(ctx: Ctx, company_id: str) -> dict:
@@ -85,30 +80,24 @@ async def create_company(
         start_date: Date matching first payday using Check (YYYY-MM-DD).
         metadata: Additional JSON metadata string.
     """
-    body: dict = {"legal_name": legal_name}
-    if trade_name is not None:
-        body["trade_name"] = trade_name
-    if other_business_name is not None:
-        body["other_business_name"] = other_business_name
-    if business_type is not None:
-        body["business_type"] = business_type
-    if industry_type is not None:
-        body["industry_type"] = industry_type
-    if website is not None:
-        body["website"] = website
-    if email is not None:
-        body["email"] = email
-    if phone is not None:
-        body["phone"] = phone
-    if address is not None:
-        body["address"] = address
-    if pay_frequency is not None:
-        body["pay_frequency"] = pay_frequency
-    if start_date is not None:
-        body["start_date"] = start_date
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_post(ctx, "/companies", data=body)
+    return await check_api_post(
+        ctx,
+        "/companies",
+        data=build_body(
+            {"legal_name": legal_name},
+            trade_name=trade_name,
+            other_business_name=other_business_name,
+            business_type=business_type,
+            industry_type=industry_type,
+            website=website,
+            email=email,
+            phone=phone,
+            address=address,
+            pay_frequency=pay_frequency,
+            start_date=start_date,
+            metadata=metadata,
+        ),
+    )
 
 
 async def update_company(
@@ -152,38 +141,28 @@ async def update_company(
         metadata: Additional JSON metadata string.
         default_bank_account: ID of the company's default bank account.
     """
-    body: dict = {}
-    if legal_name is not None:
-        body["legal_name"] = legal_name
-    if trade_name is not None:
-        body["trade_name"] = trade_name
-    if other_business_name is not None:
-        body["other_business_name"] = other_business_name
-    if business_type is not None:
-        body["business_type"] = business_type
-    if industry_type is not None:
-        body["industry_type"] = industry_type
-    if website is not None:
-        body["website"] = website
-    if email is not None:
-        body["email"] = email
-    if phone is not None:
-        body["phone"] = phone
-    if address is not None:
-        body["address"] = address
-    if principal_place_of_business is not None:
-        body["principal_place_of_business"] = principal_place_of_business
-    if pay_frequency is not None:
-        body["pay_frequency"] = pay_frequency
-    if processing_period is not None:
-        body["processing_period"] = processing_period
-    if start_date is not None:
-        body["start_date"] = start_date
-    if metadata is not None:
-        body["metadata"] = metadata
-    if default_bank_account is not None:
-        body["default_bank_account"] = default_bank_account
-    return await check_api_patch(ctx, f"/companies/{company_id}", data=body)
+    return await check_api_patch(
+        ctx,
+        f"/companies/{company_id}",
+        data=build_body(
+            {},
+            legal_name=legal_name,
+            trade_name=trade_name,
+            other_business_name=other_business_name,
+            business_type=business_type,
+            industry_type=industry_type,
+            website=website,
+            email=email,
+            phone=phone,
+            address=address,
+            principal_place_of_business=principal_place_of_business,
+            pay_frequency=pay_frequency,
+            processing_period=processing_period,
+            start_date=start_date,
+            metadata=metadata,
+            default_bank_account=default_bank_account,
+        ),
+    )
 
 
 async def onboard_company(ctx: Ctx, company_id: str) -> dict:
@@ -210,15 +189,10 @@ async def get_company_paydays(
         end_date: End of date range (YYYY-MM-DD).
         pay_schedule: Filter by pay schedule ID.
     """
-    params: dict = {}
-    if start_date:
-        params["start_date"] = start_date
-    if end_date:
-        params["end_date"] = end_date
-    if pay_schedule:
-        params["pay_schedule"] = pay_schedule
     return await check_api_get(
-        ctx, f"/companies/{company_id}/paydays", params=params or None
+        ctx,
+        f"/companies/{company_id}/paydays",
+        params=build_params(start_date=start_date, end_date=end_date, pay_schedule=pay_schedule),
     )
 
 
@@ -235,13 +209,10 @@ async def list_company_tax_deposits(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/tax_deposits", params=params or None
+        ctx,
+        f"/companies/{company_id}/tax_deposits",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -258,13 +229,10 @@ async def get_company_benefit_aggregations(
         start_date: Start of date range (YYYY-MM-DD).
         end_date: End of date range (YYYY-MM-DD).
     """
-    params: dict = {}
-    if start_date:
-        params["start_date"] = start_date
-    if end_date:
-        params["end_date"] = end_date
     return await check_api_get(
-        ctx, f"/companies/{company_id}/benefit_aggregations", params=params or None
+        ctx,
+        f"/companies/{company_id}/benefit_aggregations",
+        params=build_params(start_date=start_date, end_date=end_date),
     )
 
 
@@ -310,17 +278,10 @@ async def get_company_report(
                 f"Valid types: {', '.join(COMPANY_REPORT_TYPES)}."
             ),
         }
-    params: dict = {}
-    if start_date is not None:
-        params["start_date"] = start_date
-    if end_date is not None:
-        params["end_date"] = end_date
-    if year is not None:
-        params["year"] = year
     return await check_api_get(
         ctx,
         f"/companies/{company_id}/reports/{report_type}",
-        params=params or None,
+        params=build_params(start_date=start_date, end_date=end_date, year=year),
     )
 
 
@@ -337,15 +298,10 @@ async def list_federal_ein_verifications(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
         ctx,
         f"/companies/{company_id}/federal_ein_verifications",
-        params=params or None,
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -376,13 +332,10 @@ async def list_signatories(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/companies/{company_id}/signatories", params=params or None
+        ctx,
+        f"/companies/{company_id}/signatories",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -406,15 +359,14 @@ async def create_signatory(
         email: Signatory's email address.
         middle_name: Signatory's middle name.
     """
-    body: dict = {
-        "first_name": first_name,
-        "last_name": last_name,
-        "title": title,
-        "email": email,
-    }
-    if middle_name is not None:
-        body["middle_name"] = middle_name
-    return await check_api_post(ctx, f"/companies/{company_id}/signatories", data=body)
+    return await check_api_post(
+        ctx,
+        f"/companies/{company_id}/signatories",
+        data=build_body(
+            {"first_name": first_name, "last_name": last_name, "title": title, "email": email},
+            middle_name=middle_name,
+        ),
+    )
 
 
 # --- Enrollment Profile ---
@@ -486,61 +438,35 @@ async def create_enrollment_profile(
             "provided_credentials", or "provided_reports".
         implementation_services_submission_comment: Optional comment for submission.
     """
-    body: dict = {}
-    if employee_count is not None:
-        body["employee_count"] = employee_count
-    if contractor_count is not None:
-        body["contractor_count"] = contractor_count
-    if pay_period_amount is not None:
-        body["pay_period_amount"] = pay_period_amount
-    if previous_payroll_provider is not None:
-        body["previous_payroll_provider"] = previous_payroll_provider
-    if previous_payroll_provider_other is not None:
-        body["previous_payroll_provider_other"] = previous_payroll_provider_other
-    if first_payroll is not None:
-        body["first_payroll"] = first_payroll
-    if first_payroll_of_year is not None:
-        body["first_payroll_of_year"] = first_payroll_of_year
-    if user_since is not None:
-        body["user_since"] = user_since
-    if expected_first_payday is not None:
-        body["expected_first_payday"] = expected_first_payday
-    if approved_for_payment_processing is not None:
-        body["approved_for_payment_processing"] = approved_for_payment_processing
-    if existing_payroll_customer_processing_period is not None:
-        body["existing_payroll_customer_processing_period"] = (
-            existing_payroll_customer_processing_period
-        )
-    if average_monthly_revenue is not None:
-        body["average_monthly_revenue"] = average_monthly_revenue
-    if earliest_known_revenue is not None:
-        body["earliest_known_revenue"] = earliest_known_revenue
-    if months_on_previous_payroll_provider is not None:
-        body["months_on_previous_payroll_provider"] = (
-            months_on_previous_payroll_provider
-        )
-    if social_media is not None:
-        body["social_media"] = social_media
-    if products_actively_used is not None:
-        body["products_actively_used"] = products_actively_used
-    if account_contacts is not None:
-        body["account_contacts"] = account_contacts
-    if fraud_score is not None:
-        body["fraud_score"] = fraud_score
-    if predicted_fraud is not None:
-        body["predicted_fraud"] = predicted_fraud
-    if paying_user is not None:
-        body["paying_user"] = paying_user
-    if missed_payments_count is not None:
-        body["missed_payments_count"] = missed_payments_count
-    if payroll_history_access_method is not None:
-        body["payroll_history_access_method"] = payroll_history_access_method
-    if implementation_services_submission_comment is not None:
-        body["implementation_services_submission_comment"] = (
-            implementation_services_submission_comment
-        )
     return await check_api_put(
-        ctx, f"/companies/{company_id}/enrollment_profile", data=body
+        ctx,
+        f"/companies/{company_id}/enrollment_profile",
+        data=build_body(
+            {},
+            employee_count=employee_count,
+            contractor_count=contractor_count,
+            pay_period_amount=pay_period_amount,
+            previous_payroll_provider=previous_payroll_provider,
+            previous_payroll_provider_other=previous_payroll_provider_other,
+            first_payroll=first_payroll,
+            first_payroll_of_year=first_payroll_of_year,
+            user_since=user_since,
+            expected_first_payday=expected_first_payday,
+            approved_for_payment_processing=approved_for_payment_processing,
+            existing_payroll_customer_processing_period=existing_payroll_customer_processing_period,
+            average_monthly_revenue=average_monthly_revenue,
+            earliest_known_revenue=earliest_known_revenue,
+            months_on_previous_payroll_provider=months_on_previous_payroll_provider,
+            social_media=social_media,
+            products_actively_used=products_actively_used,
+            account_contacts=account_contacts,
+            fraud_score=fraud_score,
+            predicted_fraud=predicted_fraud,
+            paying_user=paying_user,
+            missed_payments_count=missed_payments_count,
+            payroll_history_access_method=payroll_history_access_method,
+            implementation_services_submission_comment=implementation_services_submission_comment,
+        ),
     )
 
 
@@ -600,61 +526,35 @@ async def update_enrollment_profile(
             "provided_credentials", or "provided_reports".
         implementation_services_submission_comment: Optional comment.
     """
-    body: dict = {}
-    if employee_count is not None:
-        body["employee_count"] = employee_count
-    if contractor_count is not None:
-        body["contractor_count"] = contractor_count
-    if pay_period_amount is not None:
-        body["pay_period_amount"] = pay_period_amount
-    if previous_payroll_provider is not None:
-        body["previous_payroll_provider"] = previous_payroll_provider
-    if previous_payroll_provider_other is not None:
-        body["previous_payroll_provider_other"] = previous_payroll_provider_other
-    if first_payroll is not None:
-        body["first_payroll"] = first_payroll
-    if first_payroll_of_year is not None:
-        body["first_payroll_of_year"] = first_payroll_of_year
-    if user_since is not None:
-        body["user_since"] = user_since
-    if expected_first_payday is not None:
-        body["expected_first_payday"] = expected_first_payday
-    if approved_for_payment_processing is not None:
-        body["approved_for_payment_processing"] = approved_for_payment_processing
-    if existing_payroll_customer_processing_period is not None:
-        body["existing_payroll_customer_processing_period"] = (
-            existing_payroll_customer_processing_period
-        )
-    if average_monthly_revenue is not None:
-        body["average_monthly_revenue"] = average_monthly_revenue
-    if earliest_known_revenue is not None:
-        body["earliest_known_revenue"] = earliest_known_revenue
-    if months_on_previous_payroll_provider is not None:
-        body["months_on_previous_payroll_provider"] = (
-            months_on_previous_payroll_provider
-        )
-    if social_media is not None:
-        body["social_media"] = social_media
-    if products_actively_used is not None:
-        body["products_actively_used"] = products_actively_used
-    if account_contacts is not None:
-        body["account_contacts"] = account_contacts
-    if fraud_score is not None:
-        body["fraud_score"] = fraud_score
-    if predicted_fraud is not None:
-        body["predicted_fraud"] = predicted_fraud
-    if paying_user is not None:
-        body["paying_user"] = paying_user
-    if missed_payments_count is not None:
-        body["missed_payments_count"] = missed_payments_count
-    if payroll_history_access_method is not None:
-        body["payroll_history_access_method"] = payroll_history_access_method
-    if implementation_services_submission_comment is not None:
-        body["implementation_services_submission_comment"] = (
-            implementation_services_submission_comment
-        )
     return await check_api_patch(
-        ctx, f"/companies/{company_id}/enrollment_profile", data=body
+        ctx,
+        f"/companies/{company_id}/enrollment_profile",
+        data=build_body(
+            {},
+            employee_count=employee_count,
+            contractor_count=contractor_count,
+            pay_period_amount=pay_period_amount,
+            previous_payroll_provider=previous_payroll_provider,
+            previous_payroll_provider_other=previous_payroll_provider_other,
+            first_payroll=first_payroll,
+            first_payroll_of_year=first_payroll_of_year,
+            user_since=user_since,
+            expected_first_payday=expected_first_payday,
+            approved_for_payment_processing=approved_for_payment_processing,
+            existing_payroll_customer_processing_period=existing_payroll_customer_processing_period,
+            average_monthly_revenue=average_monthly_revenue,
+            earliest_known_revenue=earliest_known_revenue,
+            months_on_previous_payroll_provider=months_on_previous_payroll_provider,
+            social_media=social_media,
+            products_actively_used=products_actively_used,
+            account_contacts=account_contacts,
+            fraud_score=fraud_score,
+            predicted_fraud=predicted_fraud,
+            paying_user=paying_user,
+            missed_payments_count=missed_payments_count,
+            payroll_history_access_method=payroll_history_access_method,
+            implementation_services_submission_comment=implementation_services_submission_comment,
+        ),
     )
 
 

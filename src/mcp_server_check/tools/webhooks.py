@@ -6,6 +6,8 @@ from fastmcp import FastMCP
 
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_delete,
     check_api_get,
     check_api_list,
@@ -27,14 +29,9 @@ async def list_webhook_configs(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/webhook_configs", params=params or None)
+    return await check_api_list(
+        ctx, "/webhook_configs", params=build_params(company=company, limit=limit, cursor=cursor)
+    )
 
 
 async def get_webhook_config(ctx: Ctx, webhook_config_id: str) -> dict:
@@ -52,8 +49,7 @@ async def create_webhook_config(ctx: Ctx, url: str) -> dict:
     Args:
         url: The webhook endpoint URL.
     """
-    body: dict = {"url": url}
-    return await check_api_post(ctx, "/webhook_configs", data=body)
+    return await check_api_post(ctx, "/webhook_configs", data={"url": url})
 
 
 async def update_webhook_config(
@@ -69,13 +65,10 @@ async def update_webhook_config(
         url: The webhook endpoint URL.
         active: Whether the webhook config is active.
     """
-    body: dict = {}
-    if url is not None:
-        body["url"] = url
-    if active is not None:
-        body["active"] = active
     return await check_api_patch(
-        ctx, f"/webhook_configs/{webhook_config_id}", data=body
+        ctx,
+        f"/webhook_configs/{webhook_config_id}",
+        data=build_body({}, url=url, active=active),
     )
 
 

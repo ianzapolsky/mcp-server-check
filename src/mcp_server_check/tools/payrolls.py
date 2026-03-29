@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from mcp_server_check.types import OffCycleOptions
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_delete,
     check_api_get,
     check_api_list,
@@ -47,34 +50,17 @@ async def list_payrolls(
         include_items: Return payroll items inline.
         include_contractor_payments: Return contractor payments inline.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if ids:
-        params["ids"] = ",".join(ids)
-    if cursor:
-        params["cursor"] = cursor
-    if type is not None:
-        params["type"] = type
-    if status is not None:
-        params["status"] = status
-    if managed is not None:
-        params["managed"] = str(managed).lower()
-    if approved is not None:
-        params["approved"] = str(approved).lower()
-    if pay_schedule is not None:
-        params["pay_schedule"] = pay_schedule
-    if payday_after is not None:
-        params["payday_after"] = payday_after
-    if payday_before is not None:
-        params["payday_before"] = payday_before
-    if include_items is not None:
-        params["include_items"] = str(include_items).lower()
-    if include_contractor_payments is not None:
-        params["include_contractor_payments"] = str(include_contractor_payments).lower()
-    return await check_api_list(ctx, "/payrolls", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/payrolls",
+        params=build_params(
+            company=company, limit=limit, ids=ids, cursor=cursor, type=type,
+            status=status, managed=managed, approved=approved,
+            pay_schedule=pay_schedule, payday_after=payday_after,
+            payday_before=payday_before, include_items=include_items,
+            include_contractor_payments=include_contractor_payments,
+        ),
+    )
 
 
 async def get_payroll(ctx: Ctx, payroll_id: str) -> dict:
@@ -97,7 +83,7 @@ async def create_payroll(
     pay_frequency: str | None = None,
     funding_payment_method: str | None = None,
     pay_schedule: str | None = None,
-    off_cycle_options: dict | None = None,
+    off_cycle_options: OffCycleOptions | None = None,
     items: list[dict] | None = None,
     contractor_payments: list[dict] | None = None,
     metadata: str | None = None,
@@ -128,33 +114,23 @@ async def create_payroll(
         metadata: Additional JSON metadata string.
         bank_account: ID of the bank account to fund the payroll.
     """
-    body: dict = {
-        "company": company,
-        "period_start": period_start,
-        "period_end": period_end,
-        "payday": payday,
-    }
-    if type is not None:
-        body["type"] = type
-    if processing_period is not None:
-        body["processing_period"] = processing_period
-    if pay_frequency is not None:
-        body["pay_frequency"] = pay_frequency
-    if funding_payment_method is not None:
-        body["funding_payment_method"] = funding_payment_method
-    if pay_schedule is not None:
-        body["pay_schedule"] = pay_schedule
-    if off_cycle_options is not None:
-        body["off_cycle_options"] = off_cycle_options
-    if items is not None:
-        body["items"] = items
-    if contractor_payments is not None:
-        body["contractor_payments"] = contractor_payments
-    if metadata is not None:
-        body["metadata"] = metadata
-    if bank_account is not None:
-        body["bank_account"] = bank_account
-    return await check_api_post(ctx, "/payrolls", data=body)
+    return await check_api_post(
+        ctx,
+        "/payrolls",
+        data=build_body(
+            {"company": company, "period_start": period_start, "period_end": period_end, "payday": payday},
+            type=type,
+            processing_period=processing_period,
+            pay_frequency=pay_frequency,
+            funding_payment_method=funding_payment_method,
+            pay_schedule=pay_schedule,
+            off_cycle_options=off_cycle_options,
+            items=items,
+            contractor_payments=contractor_payments,
+            metadata=metadata,
+            bank_account=bank_account,
+        ),
+    )
 
 
 async def update_payroll(
@@ -168,7 +144,7 @@ async def update_payroll(
     pay_frequency: str | None = None,
     funding_payment_method: str | None = None,
     pay_schedule: str | None = None,
-    off_cycle_options: dict | None = None,
+    off_cycle_options: OffCycleOptions | None = None,
     items: list[dict] | None = None,
     contractor_payments: list[dict] | None = None,
     metadata: str | None = None,
@@ -194,34 +170,26 @@ async def update_payroll(
         metadata: Additional JSON metadata string.
         bank_account: ID of the bank account to fund the payroll.
     """
-    body: dict = {}
-    if period_start is not None:
-        body["period_start"] = period_start
-    if period_end is not None:
-        body["period_end"] = period_end
-    if payday is not None:
-        body["payday"] = payday
-    if type is not None:
-        body["type"] = type
-    if processing_period is not None:
-        body["processing_period"] = processing_period
-    if pay_frequency is not None:
-        body["pay_frequency"] = pay_frequency
-    if funding_payment_method is not None:
-        body["funding_payment_method"] = funding_payment_method
-    if pay_schedule is not None:
-        body["pay_schedule"] = pay_schedule
-    if off_cycle_options is not None:
-        body["off_cycle_options"] = off_cycle_options
-    if items is not None:
-        body["items"] = items
-    if contractor_payments is not None:
-        body["contractor_payments"] = contractor_payments
-    if metadata is not None:
-        body["metadata"] = metadata
-    if bank_account is not None:
-        body["bank_account"] = bank_account
-    return await check_api_patch(ctx, f"/payrolls/{payroll_id}", data=body)
+    return await check_api_patch(
+        ctx,
+        f"/payrolls/{payroll_id}",
+        data=build_body(
+            {},
+            period_start=period_start,
+            period_end=period_end,
+            payday=payday,
+            type=type,
+            processing_period=processing_period,
+            pay_frequency=pay_frequency,
+            funding_payment_method=funding_payment_method,
+            pay_schedule=pay_schedule,
+            off_cycle_options=off_cycle_options,
+            items=items,
+            contractor_payments=contractor_payments,
+            metadata=metadata,
+            bank_account=bank_account,
+        ),
+    )
 
 
 async def delete_payroll(ctx: Ctx, payroll_id: str) -> dict:

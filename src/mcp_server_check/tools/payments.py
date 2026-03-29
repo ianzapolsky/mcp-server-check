@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 
 from mcp_server_check.helpers import (
     Ctx,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_post,
@@ -43,32 +44,18 @@ async def list_payments(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if payroll is not None:
-        params["payroll"] = payroll
-    if payroll_item is not None:
-        params["payroll_item"] = payroll_item
-    if contractor_payment is not None:
-        params["contractor_payment"] = contractor_payment
-    if direction is not None:
-        params["direction"] = direction
-    if amount_min is not None:
-        params["amount_min"] = amount_min
-    if amount_max is not None:
-        params["amount_max"] = amount_max
-    if type is not None:
-        params["type"] = type
-    if completion_date_after is not None:
-        params["completion_date_after"] = completion_date_after
-    if completion_date_before is not None:
-        params["completion_date_before"] = completion_date_before
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/payments", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/payments",
+        params=build_params(
+            company=company, payroll=payroll, payroll_item=payroll_item,
+            contractor_payment=contractor_payment, direction=direction,
+            amount_min=amount_min, amount_max=amount_max, type=type,
+            completion_date_after=completion_date_after,
+            completion_date_before=completion_date_before,
+            limit=limit, cursor=cursor,
+        ),
+    )
 
 
 async def get_payment(ctx: Ctx, payment_id: str) -> dict:
@@ -93,13 +80,10 @@ async def list_payment_attempts(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/payments/{payment_id}/payment_attempts", params=params or None
+        ctx,
+        f"/payments/{payment_id}/payment_attempts",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 

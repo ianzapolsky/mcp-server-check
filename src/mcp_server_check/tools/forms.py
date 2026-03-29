@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from mcp_server_check.types import FormParameter
 from mcp_server_check.helpers import (
     Ctx,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_post,
@@ -31,20 +33,11 @@ async def list_forms(
         lang: Filter by ISO 639-1 language code.
         type: Filter by form type (e.g. "contractor_setup").
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if state is not None:
-        params["state"] = state
-    if lang is not None:
-        params["lang"] = lang
-    if type is not None:
-        params["type"] = type
-    return await check_api_list(ctx, "/forms", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/forms",
+        params=build_params(company=company, limit=limit, cursor=cursor, state=state, lang=lang, type=type),
+    )
 
 
 async def get_form(ctx: Ctx, form_id: str) -> dict:
@@ -68,7 +61,7 @@ async def render_form(ctx: Ctx, form_id: str) -> dict:
 async def validate_form(
     ctx: Ctx,
     form_id: str,
-    parameters: list[dict],
+    parameters: list[FormParameter],
 ) -> dict:
     """Validate form data before submission.
 
@@ -77,8 +70,7 @@ async def validate_form(
         parameters: List of name/value dicts representing form fields.
             Example: [{"name": "field_name", "value": "field_value"}].
     """
-    body: dict = {"parameters": parameters}
-    return await check_api_post(ctx, f"/forms/{form_id}/validate", data=body)
+    return await check_api_post(ctx, f"/forms/{form_id}/validate", data={"parameters": parameters})
 
 
 def register(mcp: FastMCP, *, read_only: bool = False) -> None:
