@@ -7,6 +7,8 @@ from fastmcp import FastMCP
 from mcp_server_check.types import Address
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_patch,
@@ -27,13 +29,11 @@ async def list_workplaces(
         limit: Maximum number of results to return (max 500, default 500).
         cursor: Pagination cursor from a previous response.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/workplaces", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/workplaces",
+        params=build_params(company=company, limit=limit, cursor=cursor),
+    )
 
 
 async def get_workplace(ctx: Ctx, workplace_id: str) -> dict:
@@ -63,14 +63,16 @@ async def create_workplace(
         active: Whether the workplace can be associated with employees. Default: true.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {"company": company, "address": address}
-    if name is not None:
-        body["name"] = name
-    if active is not None:
-        body["active"] = active
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_post(ctx, "/workplaces", data=body)
+    return await check_api_post(
+        ctx,
+        "/workplaces",
+        data=build_body(
+            {"company": company, "address": address},
+            name=name,
+            active=active,
+            metadata=metadata,
+        ),
+    )
 
 
 async def update_workplace(
@@ -92,18 +94,18 @@ async def update_workplace(
         active: Whether the workplace can be associated with employees.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {}
-    if company is not None:
-        body["company"] = company
-    if name is not None:
-        body["name"] = name
-    if address is not None:
-        body["address"] = address
-    if active is not None:
-        body["active"] = active
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_patch(ctx, f"/workplaces/{workplace_id}", data=body)
+    return await check_api_patch(
+        ctx,
+        f"/workplaces/{workplace_id}",
+        data=build_body(
+            {},
+            company=company,
+            name=name,
+            address=address,
+            active=active,
+            metadata=metadata,
+        ),
+    )
 
 
 def register(mcp: FastMCP, *, read_only: bool = False) -> None:

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
-from mcp_server_check.types import Address
+from mcp_server_check.types import Address, FormParameter
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_patch,
@@ -29,16 +31,11 @@ async def list_contractors(
         ids: Filter to specific contractor IDs.
         cursor: Pagination cursor from a previous response.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    if limit is not None:
-        params["limit"] = limit
-    if ids:
-        params["ids"] = ",".join(ids)
-    if cursor:
-        params["cursor"] = cursor
-    return await check_api_list(ctx, "/contractors", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/contractors",
+        params=build_params(company=company, limit=limit, ids=ids, cursor=cursor),
+    )
 
 
 async def get_contractor(ctx: Ctx, contractor_id: str) -> dict:
@@ -93,42 +90,30 @@ async def create_contractor(
         address: Address with keys: line1, line2, city, state, postal_code, country.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {"company": company}
-    if type is not None:
-        body["type"] = type
-    if first_name is not None:
-        body["first_name"] = first_name
-    if middle_name is not None:
-        body["middle_name"] = middle_name
-    if last_name is not None:
-        body["last_name"] = last_name
-    if business_name is not None:
-        body["business_name"] = business_name
-    if dob is not None:
-        body["dob"] = dob
-    if start_date is not None:
-        body["start_date"] = start_date
-    if termination_date is not None:
-        body["termination_date"] = termination_date
-    if workplaces is not None:
-        body["workplaces"] = workplaces
-    if primary_workplace is not None:
-        body["primary_workplace"] = primary_workplace
-    if email is not None:
-        body["email"] = email
-    if ssn is not None:
-        body["ssn"] = ssn
-    if ein is not None:
-        body["ein"] = ein
-    if default_net_pay_split is not None:
-        body["default_net_pay_split"] = default_net_pay_split
-    if payment_method_preference is not None:
-        body["payment_method_preference"] = payment_method_preference
-    if address is not None:
-        body["address"] = address
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_post(ctx, "/contractors", data=body)
+    return await check_api_post(
+        ctx,
+        "/contractors",
+        data=build_body(
+            {"company": company},
+            type=type,
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            business_name=business_name,
+            dob=dob,
+            start_date=start_date,
+            termination_date=termination_date,
+            workplaces=workplaces,
+            primary_workplace=primary_workplace,
+            email=email,
+            ssn=ssn,
+            ein=ein,
+            default_net_pay_split=default_net_pay_split,
+            payment_method_preference=payment_method_preference,
+            address=address,
+            metadata=metadata,
+        ),
+    )
 
 
 async def update_contractor(
@@ -174,42 +159,30 @@ async def update_contractor(
         address: Address with keys: line1, line2, city, state, postal_code, country.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {}
-    if type is not None:
-        body["type"] = type
-    if first_name is not None:
-        body["first_name"] = first_name
-    if middle_name is not None:
-        body["middle_name"] = middle_name
-    if last_name is not None:
-        body["last_name"] = last_name
-    if business_name is not None:
-        body["business_name"] = business_name
-    if dob is not None:
-        body["dob"] = dob
-    if start_date is not None:
-        body["start_date"] = start_date
-    if termination_date is not None:
-        body["termination_date"] = termination_date
-    if workplaces is not None:
-        body["workplaces"] = workplaces
-    if primary_workplace is not None:
-        body["primary_workplace"] = primary_workplace
-    if email is not None:
-        body["email"] = email
-    if ssn is not None:
-        body["ssn"] = ssn
-    if ein is not None:
-        body["ein"] = ein
-    if default_net_pay_split is not None:
-        body["default_net_pay_split"] = default_net_pay_split
-    if payment_method_preference is not None:
-        body["payment_method_preference"] = payment_method_preference
-    if address is not None:
-        body["address"] = address
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_patch(ctx, f"/contractors/{contractor_id}", data=body)
+    return await check_api_patch(
+        ctx,
+        f"/contractors/{contractor_id}",
+        data=build_body(
+            {},
+            type=type,
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            business_name=business_name,
+            dob=dob,
+            start_date=start_date,
+            termination_date=termination_date,
+            workplaces=workplaces,
+            primary_workplace=primary_workplace,
+            email=email,
+            ssn=ssn,
+            ein=ein,
+            default_net_pay_split=default_net_pay_split,
+            payment_method_preference=payment_method_preference,
+            address=address,
+            metadata=metadata,
+        ),
+    )
 
 
 async def onboard_contractor(ctx: Ctx, contractor_id: str) -> dict:
@@ -238,17 +211,10 @@ async def list_contractor_payments_for_contractor(
         payroll: Filter by payroll ID.
         status: Filter by status — "pending", "processing", "failed", or "paid".
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if payroll is not None:
-        params["payroll"] = payroll
-    if status is not None:
-        params["status"] = status
     return await check_api_list(
-        ctx, f"/contractors/{contractor_id}/payments", params=params or None
+        ctx,
+        f"/contractors/{contractor_id}/payments",
+        params=build_params(limit=limit, cursor=cursor, payroll=payroll, status=status),
     )
 
 
@@ -279,13 +245,10 @@ async def list_contractor_forms(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/contractors/{contractor_id}/forms", params=params or None
+        ctx,
+        f"/contractors/{contractor_id}/forms",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -293,7 +256,7 @@ async def submit_contractor_form(
     ctx: Ctx,
     contractor_id: str,
     form_id: str,
-    parameters: list[dict] | None = None,
+    parameters: list[FormParameter] | None = None,
 ) -> dict:
     """Submit a contractor form.
 

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
-from mcp_server_check.types import Address
+from mcp_server_check.types import Address, FormParameter
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_patch,
@@ -33,19 +35,18 @@ async def list_employees(
         workplace: Filter by workplace ID(s).
         active: Filter by active status.
     """
-    params: dict = {}
-    if company is not None:
-        params["company"] = company
-    params["limit"] = limit
-    if ids:
-        params["ids"] = ",".join(ids)
-    if cursor:
-        params["cursor"] = cursor
-    if workplace is not None:
-        params["workplace"] = workplace
-    if active is not None:
-        params["active"] = str(active).lower()
-    return await check_api_list(ctx, "/employees", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/employees",
+        params=build_params(
+            company=company,
+            limit=limit,
+            ids=ids,
+            cursor=cursor,
+            workplace=workplace,
+            active=active,
+        ),
+    )
 
 
 async def get_employee(ctx: Ctx, employee_id: str) -> dict:
@@ -95,32 +96,25 @@ async def create_employee(
         default_net_pay_split: ID of employee's default net pay split.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {"company": company, "first_name": first_name, "last_name": last_name}
-    if middle_name is not None:
-        body["middle_name"] = middle_name
-    if email is not None:
-        body["email"] = email
-    if dob is not None:
-        body["dob"] = dob
-    if start_date is not None:
-        body["start_date"] = start_date
-    if termination_date is not None:
-        body["termination_date"] = termination_date
-    if residence is not None:
-        body["residence"] = residence
-    if workplaces is not None:
-        body["workplaces"] = workplaces
-    if primary_workplace is not None:
-        body["primary_workplace"] = primary_workplace
-    if ssn is not None:
-        body["ssn"] = ssn
-    if payment_method_preference is not None:
-        body["payment_method_preference"] = payment_method_preference
-    if default_net_pay_split is not None:
-        body["default_net_pay_split"] = default_net_pay_split
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_post(ctx, "/employees", data=body)
+    return await check_api_post(
+        ctx,
+        "/employees",
+        data=build_body(
+            {"company": company, "first_name": first_name, "last_name": last_name},
+            middle_name=middle_name,
+            email=email,
+            dob=dob,
+            start_date=start_date,
+            termination_date=termination_date,
+            residence=residence,
+            workplaces=workplaces,
+            primary_workplace=primary_workplace,
+            ssn=ssn,
+            payment_method_preference=payment_method_preference,
+            default_net_pay_split=default_net_pay_split,
+            metadata=metadata,
+        ),
+    )
 
 
 async def update_employee(
@@ -161,36 +155,27 @@ async def update_employee(
         default_net_pay_split: ID of employee's default net pay split.
         metadata: Additional JSON metadata string.
     """
-    body: dict = {}
-    if first_name is not None:
-        body["first_name"] = first_name
-    if middle_name is not None:
-        body["middle_name"] = middle_name
-    if last_name is not None:
-        body["last_name"] = last_name
-    if email is not None:
-        body["email"] = email
-    if dob is not None:
-        body["dob"] = dob
-    if start_date is not None:
-        body["start_date"] = start_date
-    if termination_date is not None:
-        body["termination_date"] = termination_date
-    if residence is not None:
-        body["residence"] = residence
-    if workplaces is not None:
-        body["workplaces"] = workplaces
-    if primary_workplace is not None:
-        body["primary_workplace"] = primary_workplace
-    if ssn is not None:
-        body["ssn"] = ssn
-    if payment_method_preference is not None:
-        body["payment_method_preference"] = payment_method_preference
-    if default_net_pay_split is not None:
-        body["default_net_pay_split"] = default_net_pay_split
-    if metadata is not None:
-        body["metadata"] = metadata
-    return await check_api_patch(ctx, f"/employees/{employee_id}", data=body)
+    return await check_api_patch(
+        ctx,
+        f"/employees/{employee_id}",
+        data=build_body(
+            {},
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            email=email,
+            dob=dob,
+            start_date=start_date,
+            termination_date=termination_date,
+            residence=residence,
+            workplaces=workplaces,
+            primary_workplace=primary_workplace,
+            ssn=ssn,
+            payment_method_preference=payment_method_preference,
+            default_net_pay_split=default_net_pay_split,
+            metadata=metadata,
+        ),
+    )
 
 
 async def onboard_employee(ctx: Ctx, employee_id: str) -> dict:
@@ -228,23 +213,18 @@ async def list_employee_paystubs(
         end: Filter to paystubs from payrolls with payday on or before this date (YYYY-MM-DD).
         type: Filter by payroll type — "regular", "balancing", or "amendment".
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if payroll is not None:
-        params["payroll"] = payroll
-    if status is not None:
-        params["status"] = status
-    if start is not None:
-        params["start"] = start
-    if end is not None:
-        params["end"] = end
-    if type is not None:
-        params["type"] = type
     return await check_api_list(
-        ctx, f"/employees/{employee_id}/paystubs", params=params or None
+        ctx,
+        f"/employees/{employee_id}/paystubs",
+        params=build_params(
+            limit=limit,
+            cursor=cursor,
+            payroll=payroll,
+            status=status,
+            start=start,
+            end=end,
+            type=type,
+        ),
     )
 
 
@@ -274,13 +254,10 @@ async def list_employee_forms(
         limit: Maximum number of results to return.
         cursor: Pagination cursor.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
     return await check_api_list(
-        ctx, f"/employees/{employee_id}/forms", params=params or None
+        ctx,
+        f"/employees/{employee_id}/forms",
+        params=build_params(limit=limit, cursor=cursor),
     )
 
 
@@ -298,7 +275,7 @@ async def submit_employee_form(
     ctx: Ctx,
     employee_id: str,
     form_id: str,
-    parameters: list[dict] | None = None,
+    parameters: list[FormParameter] | None = None,
 ) -> dict:
     """Submit an employee form.
 
@@ -320,7 +297,7 @@ async def sign_and_submit_employee_form(
     ctx: Ctx,
     employee_id: str,
     form_id: str,
-    parameters: list[dict] | None = None,
+    parameters: list[FormParameter] | None = None,
 ) -> dict:
     """Sign and submit an employee form.
 

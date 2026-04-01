@@ -6,6 +6,8 @@ from fastmcp import FastMCP
 
 from mcp_server_check.helpers import (
     Ctx,
+    build_body,
+    build_params,
     check_api_get,
     check_api_list,
     check_api_post,
@@ -32,18 +34,13 @@ async def list_company_tax_documents(
         year: Filter by tax year.
         quarter: Filter by tax quarter.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    if year is not None:
-        params["year"] = year
-    if quarter is not None:
-        params["quarter"] = quarter
-    return await check_api_list(ctx, "/company_tax_documents", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/company_tax_documents",
+        params=build_params(
+            limit=limit, cursor=cursor, company=company, year=year, quarter=quarter
+        ),
+    )
 
 
 async def get_company_tax_document(ctx: Ctx, document_id: str) -> dict:
@@ -82,17 +79,10 @@ async def list_company_authorization_documents(
         company: Filter by company ID.
         year: Filter by year.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    if year is not None:
-        params["year"] = year
     return await check_api_list(
-        ctx, "/company_authorization_documents", params=params or None
+        ctx,
+        "/company_authorization_documents",
+        params=build_params(limit=limit, cursor=cursor, company=company, year=year),
     )
 
 
@@ -136,18 +126,13 @@ async def list_employee_tax_documents(
         company: Filter by company ID.
         year: Filter by tax year.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if employee is not None:
-        params["employee"] = employee
-    if company is not None:
-        params["company"] = company
-    if year is not None:
-        params["year"] = year
-    return await check_api_list(ctx, "/employee_tax_documents", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/employee_tax_documents",
+        params=build_params(
+            limit=limit, cursor=cursor, employee=employee, company=company, year=year
+        ),
+    )
 
 
 async def get_employee_tax_document(ctx: Ctx, document_id: str) -> dict:
@@ -188,18 +173,17 @@ async def list_contractor_tax_documents(
         company: Filter by company ID.
         year: Filter by tax year.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if contractor is not None:
-        params["contractor"] = contractor
-    if company is not None:
-        params["company"] = company
-    if year is not None:
-        params["year"] = year
-    return await check_api_list(ctx, "/contractor_tax_documents", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/contractor_tax_documents",
+        params=build_params(
+            limit=limit,
+            cursor=cursor,
+            contractor=contractor,
+            company=company,
+            year=year,
+        ),
+    )
 
 
 async def get_contractor_tax_document(ctx: Ctx, document_id: str) -> dict:
@@ -236,14 +220,11 @@ async def list_setup_documents(
         cursor: Pagination cursor.
         company: Filter by company ID.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
-    return await check_api_list(ctx, "/setup_documents", params=params or None)
+    return await check_api_list(
+        ctx,
+        "/setup_documents",
+        params=build_params(limit=limit, cursor=cursor, company=company),
+    )
 
 
 async def get_setup_document(ctx: Ctx, document_id: str) -> dict:
@@ -280,15 +261,10 @@ async def list_company_provided_documents(
         cursor: Pagination cursor.
         company: Filter by company ID.
     """
-    params: dict = {}
-    if limit is not None:
-        params["limit"] = limit
-    if cursor:
-        params["cursor"] = cursor
-    if company is not None:
-        params["company"] = company
     return await check_api_list(
-        ctx, "/company_provided_documents", params=params or None
+        ctx,
+        "/company_provided_documents",
+        params=build_params(limit=limit, cursor=cursor, company=company),
     )
 
 
@@ -316,10 +292,11 @@ async def create_company_provided_document(
             "cash_flow_statement", "balance_sheet", "articles_of_incorporation",
             "articles_of_incorporation_signatory_amendment", "state_registration".
     """
-    body: dict = {"company": company}
-    if document_type is not None:
-        body["document_type"] = document_type
-    return await check_api_post(ctx, "/company_provided_documents", data=body)
+    return await check_api_post(
+        ctx,
+        "/company_provided_documents",
+        data=build_body({"company": company}, document_type=document_type),
+    )
 
 
 async def upload_company_provided_document_file(

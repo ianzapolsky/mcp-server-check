@@ -26,3 +26,61 @@ class Address(TypedDict, total=False):
 
     country: str
     """2-letter country code. Defaults to "US" if omitted."""
+
+
+class FormParameter(TypedDict):
+    """A single name/value pair for a form submission."""
+
+    name: str
+    """Form field name."""
+
+    value: str | int | bool
+    """Form field value."""
+
+
+class OffCycleOptions(TypedDict, total=False):
+    """Options for an off-cycle payroll."""
+
+    force_supplemental_withholding: bool
+    """Whether to use supplemental withholding rates."""
+
+    apply_benefits: bool
+    """Whether to apply benefit deductions."""
+
+    apply_post_tax_deductions: bool
+    """Whether to apply post-tax deductions."""
+
+
+class TaxParamUpdate(TypedDict, total=False):
+    """A single tax parameter update entry."""
+
+    id: str
+    """The tax parameter ID (e.g. "spa_xxxxx")."""
+
+    value: str
+    """The new value for the tax parameter."""
+
+    applied_for: bool
+    """Whether this is an applied-for value."""
+
+    effective_start: str
+    """Effective start date (YYYY-MM-DD)."""
+
+
+class EmailDetails(TypedDict, total=False):
+    """Email details for a communication."""
+
+    to: list[str]
+    """List of recipient email addresses (required)."""
+
+    sender: str
+    """Sender email address (required). Named 'sender' to avoid shadowing."""
+
+    cc: list[str]
+    """List of CC email addresses."""
+
+    subject: str
+    """Email subject line (required)."""
+
+    message: str
+    """Email body message (required)."""
